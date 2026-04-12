@@ -42,24 +42,27 @@ static const Ezjson_Value expected = {
 								.key = {.length = 9, .data = "Thumbnail"},
 								.value = {
 									.kind = EZJSON_KIND_OBJECT,
-									.object = (Ezjson_KeyValue[]){
-										{
-											.key = {.length = 3, .data = "Url"},
-											.value = {
-												.kind = EZJSON_KIND_STRING,
-												.string = {
-													.length = 38.0,
-													.data = "http://www.example.com/image/481989943",
+									.object = {
+										.length = 2,
+										.items = (Ezjson_KeyValue[]){
+											{
+												.key = {.length = 3, .data = "Url"},
+												.value = {
+													.kind = EZJSON_KIND_STRING,
+													.string = {
+														.length = 38,
+														.data = "http://www.example.com/image/481989943",
+													},
 												},
 											},
-										},
-										{
-											.key = {.length = 6, .data = "Height"},
-											.value = {.kind = EZJSON_KIND_NUMBER, .number = 125.0}
-										},
-										{
-											.key = {.length = 5, .data = "Width"},
-											.value = {.kind = EZJSON_KIND_NUMBER, .number = 100.0},
+											{
+												.key = {.length = 6, .data = "Height"},
+												.value = {.kind = EZJSON_KIND_NUMBER, .number = 125.0}
+											},
+											{
+												.key = {.length = 5, .data = "Width"},
+												.value = {.kind = EZJSON_KIND_NUMBER, .number = 100.0},
+											},
 										},
 									},
 								},
@@ -93,7 +96,8 @@ static const Ezjson_Value expected = {
 #ifdef _WIN32
 int wmain(int argc, wchar_t** argv) {
 	(void)argc;
-	FILE* stream = _wfopen(argv[1], L"r");
+	FILE* stream = NULL;
+	_wfopen_s(&stream, argv[1], L"r");
 #else
 int main(int argc, char** argv) {
 	(void)argc;

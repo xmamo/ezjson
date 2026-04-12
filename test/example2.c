@@ -133,7 +133,8 @@ static Ezjson_Value expected = {
 #ifdef _WIN32
 int wmain(int argc, wchar_t** argv) {
 	(void)argc;
-	FILE* stream = _wfopen(argv[1], L"r");
+	FILE* stream = NULL;
+	_wfopen_s(&stream, argv[1], L"r");
 #else
 int main(int argc, char** argv) {
 	(void)argc;

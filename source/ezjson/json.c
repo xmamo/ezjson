@@ -1,3 +1,7 @@
+#ifdef __unix__
+	#define _DEFAULT_SOURCE
+#endif
+
 #include "ezjson/json.h"
 
 #include <assert.h>
@@ -479,6 +483,11 @@ bool Ezjson_Read(FILE* stream, Ezjson_Value* json) {
 	assert(stream != NULL);
 	assert(json != NULL);
 
+#if defined(__unix__)
+	flockfile(stream);
+#elif defined(_WIN32)
+	_lock_file(stream);
+#endif
 	int c = fgetc(stream);
 
 	if (c == 0xEF) {  // Skip BOM
@@ -489,6 +498,11 @@ bool Ezjson_Read(FILE* stream, Ezjson_Value* json) {
 
 	bool ok = ReadValue(stream, json, &c);
 	ungetc(c, stream);
+#if defined(__unix__)
+	funlockfile(stream);
+#elif defined(_WIN32)
+	_unlock_file(stream);
+#endif
 	return ok && c == EOF;
 }
 

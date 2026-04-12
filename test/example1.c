@@ -100,7 +100,6 @@ int wmain(void) {
 	_wfopen_s(&stream, L"example1.json", L"r");
 #else
 int main(void) {
-	(void)argc;
 	FILE* stream = fopen("example1.json", "r");
 #endif
 	Ezjson_Value actual = {0};

@@ -30,13 +30,15 @@ if(BUILD_TESTING)
 	target_sources(test-example2 PRIVATE test/example2.c)
 	target_link_libraries(test-example2 PRIVATE ezjson)
 
-	add_test(NAME test-example1
-		COMMAND test-example1 example1.json
+	add_test(
+		NAME test-example1
+		COMMAND test-example1
 		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test"
 	)
 
-	add_test(NAME test-example2
-		COMMAND test-example2 example2.json
+	add_test(
+		NAME test-example2
+		COMMAND test-example2
 		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test"
 	)
 endif()

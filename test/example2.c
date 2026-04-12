@@ -131,14 +131,13 @@ static Ezjson_Value expected = {
 };
 
 #ifdef _WIN32
-int wmain(int argc, wchar_t** argv) {
-	(void)argc;
+int wmain(void) {
 	FILE* stream = NULL;
-	_wfopen_s(&stream, argv[1], L"r");
+	_wfopen_s(&stream, L"example2.json", L"r");
 #else
-int main(int argc, char** argv) {
+int main(void) {
 	(void)argc;
-	FILE* stream = fopen(argv[1], "r");
+	FILE* stream = fopen("example2.json", "r");
 #endif
 	Ezjson_Value actual = {0};
 	assert(Ezjson_Read(stream, &actual));

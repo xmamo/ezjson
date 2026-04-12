@@ -139,7 +139,7 @@ int main(int argc, char** argv) {
 	(void)argc;
 	FILE* stream = fopen(argv[1], "r");
 #endif
-	Ezjson_Value actual;
+	Ezjson_Value actual = {0};
 	assert(Ezjson_Read(stream, &actual));
 	assert(Ezjson_Equal(&actual, &expected));
 	return EXIT_SUCCESS;

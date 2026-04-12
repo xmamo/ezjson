@@ -191,7 +191,7 @@ static bool ReadString(FILE* stream, Ezjson_String* string, int* c) {
 	}
 
 	string->data[string->length - 1] = '\0';
-	char* newData = realloc(string->data, sizeof(char) * string->length - 1);
+	char* newData = realloc(string->data, sizeof(char) * string->length);
 	if (newData != NULL) string->data = newData;
 	string->length -= 1;
 
@@ -505,7 +505,7 @@ bool Ezjson_Equal(const Ezjson_Value* left, const Ezjson_Value* right) {
 
 		for (size_t i = 0; i < left->object.length; ++i) {
 			const Ezjson_KeyValue* leftItem = &left->object.items[i];
-			const Ezjson_KeyValue* rightItem = &left->object.items[i];
+			const Ezjson_KeyValue* rightItem = &right->object.items[i];
 
 			if (leftItem->key.length != rightItem->key.length)
 				return false;
@@ -536,8 +536,10 @@ bool Ezjson_Equal(const Ezjson_Value* left, const Ezjson_Value* right) {
 			return false;
 	}
 
-	if (left->kind == EZJSON_KIND_NUMBER)
-		return left->number == right->number;
+	if (left->kind == EZJSON_KIND_NUMBER) {
+		if (left->number != right->number)
+			return false;
+	}
 
 	return true;
 }

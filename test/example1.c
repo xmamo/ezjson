@@ -43,7 +43,7 @@ static const Ezjson_Value expected = {
 								.value = {
 									.kind = EZJSON_KIND_OBJECT,
 									.object = {
-										.length = 2,
+										.length = 3,
 										.items = (Ezjson_KeyValue[]){
 											{
 												.key = {.length = 3, .data = "Url"},
@@ -80,6 +80,7 @@ static const Ezjson_Value expected = {
 										.items = (Ezjson_Value[]){
 											{.kind = EZJSON_KIND_NUMBER, .number = 116.0},
 											{.kind = EZJSON_KIND_NUMBER, .number = 943.0},
+											{.kind = EZJSON_KIND_NUMBER, .number = 234.0},
 											{.kind = EZJSON_KIND_NUMBER, .number = 38793.0},
 										},
 									},

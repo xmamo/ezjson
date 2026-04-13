@@ -539,7 +539,7 @@ bool Ezjson_Read(FILE* stream, Ezjson_Value* json) {
 #elif defined(_WIN32)
 	_unlock_file(stream);
 #endif
-	return ok && c == EOF;
+	return ok;
 }
 
 bool Ezjson_Equal(const Ezjson_Value* left, const Ezjson_Value* right) {

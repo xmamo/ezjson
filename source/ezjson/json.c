@@ -82,6 +82,50 @@ static void SkipWs(FILE* stream, int* c) {
 	}
 }
 
+static bool ReadEscape(FILE* stream, char* v, char16_t* cu, int* c) {
+	assert(stream != NULL);
+	assert(v != NULL && *v == '\0');
+	assert(cu != NULL && *cu == 0);
+	assert(c != NULL && *c == (unsigned char)'\\');
+
+	static const char escapeKey[] =
+		"\"\\/bfnrt";
+
+	static const char escapeValue[] =
+		"\"\\/\b\f\n\r\t";
+
+	static const char hexKey[] =
+		"0123456789"
+		"abcdef"
+		"ABCDEF";
+
+	static const unsigned short hexValue[] = {
+		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+		0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+		0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
+	};
+
+	if ((*c = fgetc(stream)) == EOF) return false;
+	const char* p = strchr(escapeKey, (char)*c);
+
+	if (p != NULL) {
+		*v = escapeValue[p - escapeKey];
+		return true;
+	}
+
+	if (*c != (unsigned char)'u')
+		return false;
+
+	for (int i = 0; i < 4; ++i) {
+		if ((*c = fgetc(stream)) == EOF) return false;
+		p = strchr(hexKey, (char)*c);
+		if (p == NULL) return false;
+		*cu = (*cu << 4) | hexValue[p - hexKey];
+	}
+
+	return true;
+}
+
 static bool ReadString(FILE* stream, Ezjson_String* string, int* c) {
 	assert(stream != NULL);
 	assert(string != NULL && string->data == NULL && string->length == 0);
@@ -95,88 +139,88 @@ static bool ReadString(FILE* stream, Ezjson_String* string, int* c) {
 	while (true) {
 		*c = fgetc(stream);
 
+	top:
 		if (*c == (unsigned char)'"')
 			break;
 
 		if (*c == (unsigned char)'\\') {
-			*c = fgetc(stream);
-			if (*c == EOF) goto error;
+			char v1 = '\0';
+			char16_t cu1 = 0;
+			if (!ReadEscape(stream, &v1, &cu1, c)) goto error;
 
-			static const char escapeKey[] = "\"\\/bfnrt";
-			static const char escapeValue[] = "\"\\/\b\f\n\r\t";
-			char* p = strchr(escapeKey, (char)*c);
-
-			if (p != NULL) {
+			if (cu1 == 0) {
 				if (!GrowCharVec(&string->data, &string->length, &capacity, 1)) goto error;
-				string->data[string->length - 2] = escapeValue[p - escapeKey];
-			} else if (*c == (unsigned char)'u') {
-				static const char hexKey[] =
-					"0123456789"
-					"abcdef"
-					"ABCDEF";
+				string->data[string->length - 2] = v1;
+				continue;
+			}
 
-				static const unsigned short hexValue[] = {
-					0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
-					0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
-					0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
-				};
-
-				char16_t hi = 0;
-				char16_t lo = 0;
-				char32_t cp = 0;
-
-				for (int i = 0; i < 4; ++i) {
-					if ((*c = fgetc(stream)) == EOF) goto error;
-					p = strchr(hexKey, (char)*c);
-					if (p == NULL) goto error;
-					hi = (hi << 4) | hexValue[p - hexKey];
-				}
-
-				if (hi < 0xD800 || hi > 0xDFFF) {
-					cp = hi;
-				} else if (hi >= 0xD800 && hi <= 0xDBFF) {
-					if ((*c = fgetc(stream)) != (unsigned char)'\\') goto error;
-					if ((*c = fgetc(stream)) != (unsigned char)'u') goto error;
-
-					for (int i = 0; i < 4; ++i) {
-						if ((*c = fgetc(stream)) == EOF) goto error;
-						p = strchr(hexKey, (char)*c);
-						if (p == NULL) goto error;
-						lo = (lo << 4) | hexValue[p - hexKey];
-					}
-
-					if (lo >= 0xDC00 && lo <= 0xDFFF) {
-						cp = (((hi & 0x3FF) << 10) | (lo & 0x3FF)) + 0x10000;
-					} else {
-						goto error;
-					}
-				} else {
-					goto error;
-				}
-
-				if (cp <= 0x7F) {
+			if ((*c = fgetc(stream)) != (unsigned char)'\\' || cu1 < 0xD800 || cu1 > 0xDBFF) {
+				if (cu1 <= 0x7F) {
 					if (!GrowCharVec(&string->data, &string->length, &capacity, 1)) goto error;
-					string->data[string->length - 2] = (unsigned char)(0x00 | ((cp >> 0) & 0x7F));
-				} else if (cp <= 0x7FF) {
+					string->data[string->length - 2] = (unsigned char)(0x00 | ((cu1 >> 0) & 0x7F));
+				} else if (cu1 <= 0x7FF) {
 					if (!GrowCharVec(&string->data, &string->length, &capacity, 2)) goto error;
-					string->data[string->length - 3] = (unsigned char)(0xC0 | ((cp >> 6) & 0xFF));
-					string->data[string->length - 2] = (unsigned char)(0x80 | ((cp >> 0) & 0x3F));
-				} else if (cp <= 0xFFFF) {
-					if (!GrowCharVec(&string->data, &string->length, &capacity, 3)) goto error;
-					string->data[string->length - 4] = (unsigned char)(0xE0 | ((cp >> 12) & 0x0F));
-					string->data[string->length - 3] = (unsigned char)(0x80 | ((cp >> 6) & 0x3F));
-					string->data[string->length - 2] = (unsigned char)(0x80 | ((cp >> 0) & 0x3F));
-				} else if (cp <= 0x10FFFF) {
-					if (!GrowCharVec(&string->data, &string->length, &capacity, 4)) goto error;
-					string->data[string->length - 5] = (unsigned char)(0xF0 | ((cp >> 18) & 0x07));
-					string->data[string->length - 4] = (unsigned char)(0x80 | ((cp >> 12) & 0x3F));
-					string->data[string->length - 3] = (unsigned char)(0x80 | ((cp >> 6) & 0x3F));
-					string->data[string->length - 2] = (unsigned char)(0x80 | ((cp >> 0) & 0x3F));
+					string->data[string->length - 3] = (unsigned char)(0xC0 | ((cu1 >> 6) & 0xFF));
+					string->data[string->length - 2] = (unsigned char)(0x80 | ((cu1 >> 0) & 0x3F));
 				} else {
-					goto error;
+					if (!GrowCharVec(&string->data, &string->length, &capacity, 3)) goto error;
+					string->data[string->length - 4] = (unsigned char)(0xE0 | ((cu1 >> 12) & 0x0F));
+					string->data[string->length - 3] = (unsigned char)(0x80 | ((cu1 >> 6) & 0x3F));
+					string->data[string->length - 2] = (unsigned char)(0x80 | ((cu1 >> 0) & 0x3F));
 				}
+
+				goto top;
+			}
+
+			char v2 = '\0';
+			char16_t cu2 = 0;
+			if (!ReadEscape(stream, &v2, &cu2, c)) return false;
+
+			if (cu2 == 0) {
+				if (!GrowCharVec(&string->data, &string->length, &capacity, 1)) goto error;
+				string->data[string->length - 2] = v2;
+				continue;
+			}
+
+			if (cu2 < 0xDC00 || cu2 > 0xDFFF) {
+				if (cu2 <= 0x7F) {
+					if (!GrowCharVec(&string->data, &string->length, &capacity, 1)) goto error;
+					string->data[string->length - 2] = (unsigned char)(0x00 | ((cu2 >> 0) & 0x7F));
+				} else if (cu2 <= 0x7FF) {
+					if (!GrowCharVec(&string->data, &string->length, &capacity, 2)) goto error;
+					string->data[string->length - 3] = (unsigned char)(0xC0 | ((cu2 >> 6) & 0xFF));
+					string->data[string->length - 2] = (unsigned char)(0x80 | ((cu2 >> 0) & 0x3F));
+				} else {
+					if (!GrowCharVec(&string->data, &string->length, &capacity, 3)) goto error;
+					string->data[string->length - 4] = (unsigned char)(0xE0 | ((cu2 >> 12) & 0x0F));
+					string->data[string->length - 3] = (unsigned char)(0x80 | ((cu2 >> 6) & 0x3F));
+					string->data[string->length - 2] = (unsigned char)(0x80 | ((cu2 >> 0) & 0x3F));
+				}
+
+				continue;
+			}
+
+			char32_t cp = ((((char32_t)cu1 & 0x3FF) << 10) | ((char32_t)cu2 & 0x3FF)) + 0x10000;
+
+			if (cp <= 0x7F) {
+				if (!GrowCharVec(&string->data, &string->length, &capacity, 1)) goto error;
+				string->data[string->length - 2] = (unsigned char)(0x00 | ((cp >> 0) & 0x7F));
+			} else if (cp <= 0x7FF) {
+				if (!GrowCharVec(&string->data, &string->length, &capacity, 2)) goto error;
+				string->data[string->length - 3] = (unsigned char)(0xC0 | ((cp >> 6) & 0xFF));
+				string->data[string->length - 2] = (unsigned char)(0x80 | ((cp >> 0) & 0x3F));
+			} else if (cp <= 0xFFFF) {
+				if (!GrowCharVec(&string->data, &string->length, &capacity, 3)) goto error;
+				string->data[string->length - 4] = (unsigned char)(0xE0 | ((cp >> 12) & 0x0F));
+				string->data[string->length - 3] = (unsigned char)(0x80 | ((cp >> 6) & 0x3F));
+				string->data[string->length - 2] = (unsigned char)(0x80 | ((cp >> 0) & 0x3F));
 			} else {
-				goto error;
+				assert(cp <= 0x10FFFF);
+				if (!GrowCharVec(&string->data, &string->length, &capacity, 4)) goto error;
+				string->data[string->length - 5] = (unsigned char)(0xF0 | ((cp >> 18) & 0x07));
+				string->data[string->length - 4] = (unsigned char)(0x80 | ((cp >> 12) & 0x3F));
+				string->data[string->length - 3] = (unsigned char)(0x80 | ((cp >> 6) & 0x3F));
+				string->data[string->length - 2] = (unsigned char)(0x80 | ((cp >> 0) & 0x3F));
 			}
 
 			continue;

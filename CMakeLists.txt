@@ -30,6 +30,10 @@ if(BUILD_TESTING)
 	target_sources(test-example2 PRIVATE test/example2.c)
 	target_link_libraries(test-example2 PRIVATE ezjson)
 
+	add_executable(test-strings)
+	target_sources(test-strings PRIVATE test/strings.c)
+	target_link_libraries(test-strings PRIVATE ezjson)
+
 	add_test(
 		NAME test-example1
 		COMMAND test-example1
@@ -39,6 +43,12 @@ if(BUILD_TESTING)
 	add_test(
 		NAME test-example2
 		COMMAND test-example2
+		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test"
+	)
+
+	add_test(
+		NAME test-strings
+		COMMAND test-strings
 		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test"
 	)
 endif()

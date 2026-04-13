@@ -309,7 +309,7 @@ static bool ReadNumeral(Stream* stream, char** numeral, int* c) {
 	// Data is now: -?[0-9]
 
 	if (*c != (unsigned char)'0') {
-		while (true) {
+		do {
 			*c = StreamGet(stream);
 
 			if (*c == EOF || strchr("0123456789.eE", *c) == NULL) {
@@ -319,7 +319,7 @@ static bool ReadNumeral(Stream* stream, char** numeral, int* c) {
 
 			if (!GrowCharVec(numeral, &size, &capacity, 1)) goto error;
 			(*numeral)[size - 2] = (char)*c;
-		}
+		} while (strchr(".eE", *c) == NULL);
 	} else {
 		*c = StreamGet(stream);
 
@@ -342,7 +342,7 @@ static bool ReadNumeral(Stream* stream, char** numeral, int* c) {
 		if (!GrowCharVec(numeral, &size, &capacity, 1)) goto error;
 		(*numeral)[size - 2] = (char)*c;
 
-		while (true) {
+		do {
 			*c = StreamGet(stream);
 
 			if (*c == EOF || strchr("0123456789eE", *c) == NULL) {
@@ -352,7 +352,7 @@ static bool ReadNumeral(Stream* stream, char** numeral, int* c) {
 
 			if (!GrowCharVec(numeral, &size, &capacity, 1)) goto error;
 			(*numeral)[size - 2] = (char)*c;
-		}
+		} while (strchr("eE", *c) == NULL);
 	}
 
 	// Data is now: -?(0|[1-9][0-9]*)(\.[0-9]+)?[eE]
@@ -377,7 +377,7 @@ static bool ReadNumeral(Stream* stream, char** numeral, int* c) {
 
 	// Data is now: -?(0|[1-9][0-9]*)(\.[0-9]+)?[eE][+-]?[0-9]
 
-	while (true) {
+	do {
 		*c = StreamGet(stream);
 
 		if (*c == EOF || strchr("0123456789", *c) == NULL) {
@@ -387,7 +387,7 @@ static bool ReadNumeral(Stream* stream, char** numeral, int* c) {
 
 		if (!GrowCharVec(numeral, &size, &capacity, 1)) goto error;
 		(*numeral)[size - 2] = (char)*c;
-	}
+	} while (true);
 
 success:
 	(*numeral)[size - 1] = '\0';
@@ -586,13 +586,19 @@ bool Ezjson_FileRead(FILE* file, Ezjson_Value* json) {
 	ungetc(c, file);
 	funlockfile(file);
 	return r;
-#else
+#elif defined(_WIN32)
 	_lock_file(file);
 	FileStream stream = {{FileStreamGet}, file};
 	int c = '\0';
 	bool r = Ezjson_Read(&stream.super, json, &c);
 	ungetc(c, file);
 	_unlock_file(file);
+	return r;
+#else
+	FileStream stream = {{FileStreamGet}, file};
+	int c = '\0';
+	bool r = Ezjson_Read(&stream.super, json, &c);
+	ungetc(c, file);
 	return r;
 #endif
 }

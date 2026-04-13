@@ -11,6 +11,9 @@ int wmain(void) {
 int main(void) {
 #endif
 	Ezjson_Value json = {0};
+	assert(Ezjson_MemoryRead("\"\\\"\\/\\b\\f\\n\\r\\t\"", 16, &json));
+	assert(Ezjson_Equal(&json, &(Ezjson_Value){EZJSON_KIND_STRING, .string = {"\"/\b\f\n\r\t", 7}}));
+
 	assert(Ezjson_MemoryRead("\"\\uD834\\uDD1E\"", 14, &json));
 	assert(Ezjson_Equal(&json, &(Ezjson_Value){EZJSON_KIND_STRING, .string = {"\xF0\x9D\x84\x9E", 4}}));
 

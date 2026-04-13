@@ -7,86 +7,57 @@
 
 static const Ezjson_Value expected = {
 	.kind = EZJSON_KIND_OBJECT,
-	.object = {
-		.length = 1,
-		.items = (Ezjson_KeyValue[]){
-			{
-				.key = {.length = 5, .data = "Image"},
-				.value = {
-					.kind = EZJSON_KIND_OBJECT,
-					.object = {
-						.length = 6,
-						.items = (Ezjson_KeyValue[]){
-							{
-								.key = {.length = 5, .data = "Width"},
-								.value = {
-									.kind = EZJSON_KIND_NUMBER,
-									.number = 800.0,
-								},
-							},
-							{
-								.key = {.length = 6, .data = "Height"},
-								.value = {
-									.kind = EZJSON_KIND_NUMBER,
-									.number = 600.0,
-								},
-							},
-							{
-								.key = {.length = 5, .data = "Title"},
-								.value = {
-									.kind = EZJSON_KIND_STRING,
-									.string = {.length = 20, .data = "View from 15th Floor"},
-								},
-							},
-							{
-								.key = {.length = 9, .data = "Thumbnail"},
-								.value = {
-									.kind = EZJSON_KIND_OBJECT,
-									.object = {
-										.length = 3,
-										.items = (Ezjson_KeyValue[]){
-											{
-												.key = {.length = 3, .data = "Url"},
-												.value = {
-													.kind = EZJSON_KIND_STRING,
-													.string = {
-														.length = 38,
-														.data = "http://www.example.com/image/481989943",
-													},
-												},
-											},
-											{
-												.key = {.length = 6, .data = "Height"},
-												.value = {.kind = EZJSON_KIND_NUMBER, .number = 125.0}
-											},
-											{
-												.key = {.length = 5, .data = "Width"},
-												.value = {.kind = EZJSON_KIND_NUMBER, .number = 100.0},
-											},
-										},
-									},
-								},
-							},
-							{
-								.key = {.length = 8, .data = "Animated"},
-								.value = {.kind = EZJSON_KIND_FALSE},
-							},
-							{
-								.key = {.length = 3, .data = "IDs"},
-								.value = {
-									.kind = EZJSON_KIND_ARRAY,
-									.array = {
-										.length = 4,
-										.items = (Ezjson_Value[]){
-											{.kind = EZJSON_KIND_NUMBER, .number = 116.0},
-											{.kind = EZJSON_KIND_NUMBER, .number = 943.0},
-											{.kind = EZJSON_KIND_NUMBER, .number = 234.0},
-											{.kind = EZJSON_KIND_NUMBER, .number = 38793.0},
-										},
-									},
-								},
-							},
+	.object.length = 1,
+	.object.items = (Ezjson_KeyValue[]){
+		{
+			.key = {"Image", 5},
+			.value.kind = EZJSON_KIND_OBJECT,
+			.value.object.length = 6,
+			.value.object.items = (Ezjson_KeyValue[]){
+				{
+					.key = {"Width", 5},
+					.value = {EZJSON_KIND_NUMBER, .number = 800.0},
+				},
+				{
+					.key = {"Height", 6},
+					.value = {EZJSON_KIND_NUMBER, .number = 600.0},
+				},
+				{
+					.key = {"Title", 5},
+					.value = {EZJSON_KIND_STRING, .string = {"View from 15th Floor", 20}},
+				},
+				{
+					.key = {"Thumbnail", 9},
+					.value.kind = EZJSON_KIND_OBJECT,
+					.value.object.length = 3,
+					.value.object.items = (Ezjson_KeyValue[]){
+						{
+							.key = {"Url", 3},
+							.value = {EZJSON_KIND_STRING, .string = {"http://www.example.com/image/481989943", 38}},
 						},
+						{
+							.key = {"Height", 6},
+							.value = {EZJSON_KIND_NUMBER, .number = 125.0}
+						},
+						{
+							.key = {"Width", 5},
+							.value = {EZJSON_KIND_NUMBER, .number = 100.0},
+						},
+					},
+				},
+				{
+					.key = {"Animated", 8},
+					.value.kind = EZJSON_KIND_FALSE,
+				},
+				{
+					.key = {"IDs", 3},
+					.value.kind = EZJSON_KIND_ARRAY,
+					.value.array.length = 4,
+					.value.array.items = (Ezjson_Value[]){
+						{EZJSON_KIND_NUMBER, .number = 116.0},
+						{EZJSON_KIND_NUMBER, .number = 943.0},
+						{EZJSON_KIND_NUMBER, .number = 234.0},
+						{EZJSON_KIND_NUMBER, .number = 38793.0},
 					},
 				},
 			},

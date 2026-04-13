@@ -280,7 +280,7 @@ static bool ReadString(Stream* stream, Ezjson_String* string, int* c) {
 
 error:
 	free(string->data);
-	*string = (Ezjson_String){0};
+	*string = (Ezjson_String){NULL};
 	return false;
 }
 
@@ -492,22 +492,22 @@ static bool ReadValue(Stream* stream, Ezjson_Value* value, int* c) {
 	SkipWs(stream, c);
 
 	if (*c == (unsigned char)'{') {
-		*value = (Ezjson_Value){.kind = EZJSON_KIND_OBJECT, .object = (Ezjson_Object){0}};
+		*value = (Ezjson_Value){EZJSON_KIND_OBJECT, .object = (Ezjson_Object){0}};
 		return ReadObject(stream, &value->object, c);
 	}
 
 	if (*c == (unsigned char)'[') {
-		*value = (Ezjson_Value){.kind = EZJSON_KIND_ARRAY, .array = (Ezjson_Array){0}};
+		*value = (Ezjson_Value){EZJSON_KIND_ARRAY, .array = (Ezjson_Array){0}};
 		return ReadArray(stream, &value->array, c);
 	}
 
 	if (*c == (unsigned char)'"') {
-		*value = (Ezjson_Value){.kind = EZJSON_KIND_STRING, .string = (Ezjson_String){0}};
+		*value = (Ezjson_Value){EZJSON_KIND_STRING, .string = (Ezjson_String){0}};
 		return ReadString(stream, &value->string, c);
 	}
 
 	if (*c != EOF && strchr("0123456789-", *c) != NULL) {
-		*value = (Ezjson_Value){.kind = EZJSON_KIND_NUMBER, .number = 0.0};
+		*value = (Ezjson_Value){EZJSON_KIND_NUMBER, .number = 0.0};
 
 		char* numeral = NULL;
 		if (!ReadNumeral(stream, &numeral, c)) return false;
@@ -588,7 +588,7 @@ bool Ezjson_FileRead(FILE* file, Ezjson_Value* json) {
 	return r;
 #else
 	_lock_file(file);
-	FileStream stream = {.super.get = FileStreamGet, .file = file};
+	FileStream stream = {{FileStreamGet}, file};
 	int c = '\0';
 	bool r = Ezjson_Read(&stream.super, json, &c);
 	ungetc(c, file);
@@ -609,7 +609,7 @@ bool Ezjson_MemoryRead(const void* memory, size_t size, Ezjson_Value* json) {
 	fclose(file);
 	return r;
 #else
-	MemoryStream stream = {.super.get = MemoryStreamGet, .data = memory, .size = size};
+	MemoryStream stream = {{MemoryStreamGet}, memory, size};
 	int c = '\0';
 	return Ezjson_Read(&stream.super, json, &c);
 #endif

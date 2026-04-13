@@ -7,123 +7,81 @@
 
 static Ezjson_Value expected = {
 	.kind = EZJSON_KIND_ARRAY,
-	.array = {
-		.length = 2,
-		.items = (Ezjson_Value[]){
-			{
-				.kind = EZJSON_KIND_OBJECT,
-				.object = {
-					.length = 8,
-					.items = (Ezjson_KeyValue[]){
-						{
-							.key = {.length = 9, .data = "precision"},
-							.value = {
-								.kind = EZJSON_KIND_STRING,
-								.string = {.length = 3, .data = "zip"},
-							},
-						},
-						{
-							.key = {.length = 8, .data = "Latitude"},
-							.value = {.kind = EZJSON_KIND_NUMBER, .number = 37.7668},
-						},
-						{
-							.key = {.length = 9, .data = "Longitude"},
-							.value = {.kind = EZJSON_KIND_NUMBER, .number = -122.3959},
-						},
-						{
-							.key = {.length = 7, .data = "Address"},
-							.value = {
-								.kind = EZJSON_KIND_STRING,
-								.string = {.length = 0, .data = ""},
-							},
-						},
-						{
-							.key = {.length = 4, .data = "City"},
-							.value = {
-								.kind = EZJSON_KIND_STRING,
-								.string = {.length = 13, .data = "SAN FRANCISCO"},
-							},
-						},
-						{
-							.key = {.length = 5, .data = "State"},
-							.value = {
-								.kind = EZJSON_KIND_STRING,
-								.string = {.length = 2, .data = "CA"},
-							},
-						},
-						{
-							.key = {.length = 3, .data = "Zip"},
-							.value = {
-								.kind = EZJSON_KIND_STRING,
-								.string = {.length = 5, .data = "94107"},
-							},
-						},
-						{
-							.key = {.length = 7, .data = "Country"},
-							.value = {
-								.kind = EZJSON_KIND_STRING,
-								.string = {.length = 2, .data = "US"},
-							},
-						},
-					},
+	.array.length = 2,
+	.array.items = (Ezjson_Value[]){
+		{
+			.kind = EZJSON_KIND_OBJECT,
+			.object.length = 8,
+			.object.items = (Ezjson_KeyValue[]){
+				{
+					.key = {"precision", 9},
+					.value = {EZJSON_KIND_STRING, .string = {"zip", 3}},
+				},
+				{
+					.key = {"Latitude", 8},
+					.value = {EZJSON_KIND_NUMBER, .number = 37.7668},
+				},
+				{
+					.key = {"Longitude", 9},
+					.value = {EZJSON_KIND_NUMBER, .number = -122.3959},
+				},
+				{
+					.key = {"Address", 7},
+					.value = {EZJSON_KIND_STRING, .string = {"", 0}},
+				},
+				{
+					.key = {"City", 4},
+					.value = {EZJSON_KIND_STRING, .string = {"SAN FRANCISCO", 13}},
+				},
+				{
+					.key = {"State", 5},
+					.value = {EZJSON_KIND_STRING, .string = {"CA", 2}},
+				},
+				{
+					.key = {"Zip", 3},
+					.value = {EZJSON_KIND_STRING, .string = {"94107", 5}},
+				},
+				{
+					.key = {"Country", 7},
+					.value = {EZJSON_KIND_STRING, .string = {"US", 2}},
 				},
 			},
-			{
-				.kind = EZJSON_KIND_OBJECT,
-				.object = {
-					.length = 8,
-					.items = (Ezjson_KeyValue[]){
-						{
-							.key = {.length = 9, .data = "precision"},
-							.value = {
-								.kind = EZJSON_KIND_STRING,
-								.string = {.length = 3, .data = "zip"},
-							},
-						},
-						{
-							.key = {.length = 8, .data = "Latitude"},
-							.value = {.kind = EZJSON_KIND_NUMBER, .number = 37.371991},
-						},
-						{
-							.key = {.length = 9, .data = "Longitude"},
-							.value = {.kind = EZJSON_KIND_NUMBER, .number = -122.026020},
-						},
-						{
-							.key = {.length = 7, .data = "Address"},
-							.value = {
-								.kind = EZJSON_KIND_STRING,
-								.string = {.length = 0, .data = ""},
-							},
-						},
-						{
-							.key = {.length = 4, .data = "City"},
-							.value = {
-								.kind = EZJSON_KIND_STRING,
-								.string = {.length = 9, .data = "SUNNYVALE"},
-							},
-						},
-						{
-							.key = {.length = 5, .data = "State"},
-							.value = {
-								.kind = EZJSON_KIND_STRING,
-								.string = {.length = 2, .data = "CA"},
-							},
-						},
-						{
-							.key = {.length = 3, .data = "Zip"},
-							.value = {
-								.kind = EZJSON_KIND_STRING,
-								.string = {.length = 5, .data = "94085"},
-							},
-						},
-						{
-							.key = {.length = 7, .data = "Country"},
-							.value = {
-								.kind = EZJSON_KIND_STRING,
-								.string = {.length = 2, .data = "US"},
-							},
-						},
-					},
+		},
+		{
+			.kind = EZJSON_KIND_OBJECT,
+			.object.length = 8,
+			.object.items = (Ezjson_KeyValue[]){
+				{
+					.key = {"precision", 9},
+					.value = {EZJSON_KIND_STRING, .string = {"zip", 3}},
+				},
+				{
+					.key = {"Latitude", 8},
+					.value = {EZJSON_KIND_NUMBER, .number = 37.371991},
+				},
+				{
+					.key = {"Longitude", 9},
+					.value = {.kind = EZJSON_KIND_NUMBER, .number = -122.026020},
+				},
+				{
+					.key = {"Address", 7},
+					.value = {EZJSON_KIND_STRING, .string = {"", 0}},
+				},
+				{
+					.key = {"City", 4},
+					.value = {EZJSON_KIND_STRING, .string = {"SUNNYVALE", 9}},
+				},
+				{
+					.key = {"State", 5},
+					.value = {EZJSON_KIND_STRING, .string = {"CA", 2}},
+				},
+				{
+					.key = {"Zip", 3},
+					.value = {EZJSON_KIND_STRING, .string = {"94085", 5}},
+				},
+				{
+					.key = {"Country", 7},
+					.value = {EZJSON_KIND_STRING, .string = {"US", 2}},
 				},
 			},
 		},

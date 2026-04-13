@@ -1,4 +1,4 @@
-#ifdef __unix__
+#if defined(__unix__)
 	#define _DEFAULT_SOURCE
 #endif
 
@@ -73,11 +73,50 @@ static bool GrowKeyValueVec(Ezjson_KeyValue** data, size_t* length, size_t* capa
 	return r;
 }
 
+static bool AppendCU(char** data, size_t* length, size_t* capacity, char32_t cu) {
+	assert(data != NULL);
+	assert(length != NULL);
+	assert(capacity != NULL);
+	assert(cu <= 0x10FFFF);
+
+	if (cu <= 0x7F) {
+		if (!GrowCharVec(data, length, capacity, 1)) return false;
+		(*data)[*length - 2] = 0x00 | ((cu >> 0) & 0x7F);
+		return true;
+	}
+
+	if (cu <= 0x7FF) {
+		if (!GrowCharVec(data, length, capacity, 2)) return false;
+		(*data)[*length - 3] = 0xC0 | ((cu >> 6) & 0xFF);
+		(*data)[*length - 2] = 0x80 | ((cu >> 0) & 0x3F);
+		return true;
+	}
+
+	if (cu <= 0xFFFF) {
+		if (!GrowCharVec(data, length, capacity, 3)) return false;
+		(*data)[*length - 4] = 0xE0 | ((cu >> 12) & 0x0F);
+		(*data)[*length - 3] = 0x80 | ((cu >> 6) & 0x3F);
+		(*data)[*length - 2] = 0x80 | ((cu >> 0) & 0x3F);
+		return true;
+	}
+
+	if (cu <= 0x1FFFFF) {
+		if (!GrowCharVec(data, length, capacity, 4)) return false;
+		(*data)[*length - 5] = 0xF0 | ((cu >> 18) & 0x07);
+		(*data)[*length - 4] = 0x80 | ((cu >> 12) & 0x3F);
+		(*data)[*length - 3] = 0x80 | ((cu >> 6) & 0x3F);
+		(*data)[*length - 2] = 0x80 | ((cu >> 0) & 0x3F);
+		return true;
+	}
+
+	return false;
+}
+
 static void SkipWs(FILE* stream, int* c) {
 	assert(stream != NULL);
 	assert(c != NULL && (*c == EOF || (*c >= 0 && *c <= UCHAR_MAX)));
 
-	while (*c != EOF && strchr(" \t\n\r", (char)*c) != NULL) {
+	while (*c != EOF && strchr(" \t\n\r", *c) != NULL) {
 		*c = fgetc(stream);
 	}
 }
@@ -106,7 +145,7 @@ static bool ReadEscape(FILE* stream, char* v, char16_t* cu, int* c) {
 	};
 
 	if ((*c = fgetc(stream)) == EOF) return false;
-	const char* p = strchr(escapeKey, (char)*c);
+	const char* p = strchr(escapeKey, *c);
 
 	if (p != NULL) {
 		*v = escapeValue[p - escapeKey];
@@ -118,7 +157,7 @@ static bool ReadEscape(FILE* stream, char* v, char16_t* cu, int* c) {
 
 	for (int i = 0; i < 4; ++i) {
 		if ((*c = fgetc(stream)) == EOF) return false;
-		p = strchr(hexKey, (char)*c);
+		p = strchr(hexKey, *c);
 		if (p == NULL) return false;
 		*cu = (*cu << 4) | hexValue[p - hexKey];
 	}
@@ -140,102 +179,50 @@ static bool ReadString(FILE* stream, Ezjson_String* string, int* c) {
 		*c = fgetc(stream);
 
 	top:
+		if (*c == EOF)
+			goto error;
+
 		if (*c == (unsigned char)'"')
 			break;
 
-		if (*c == (unsigned char)'\\') {
-			char v1 = '\0';
-			char16_t cu1 = 0;
-			if (!ReadEscape(stream, &v1, &cu1, c)) goto error;
-
-			if (cu1 == 0) {
-				if (!GrowCharVec(&string->data, &string->length, &capacity, 1)) goto error;
-				string->data[string->length - 2] = v1;
-				continue;
-			}
-
-			if ((*c = fgetc(stream)) != (unsigned char)'\\' || cu1 < 0xD800 || cu1 > 0xDBFF) {
-				if (cu1 <= 0x7F) {
-					if (!GrowCharVec(&string->data, &string->length, &capacity, 1)) goto error;
-					string->data[string->length - 2] = (unsigned char)(0x00 | ((cu1 >> 0) & 0x7F));
-				} else if (cu1 <= 0x7FF) {
-					if (!GrowCharVec(&string->data, &string->length, &capacity, 2)) goto error;
-					string->data[string->length - 3] = (unsigned char)(0xC0 | ((cu1 >> 6) & 0xFF));
-					string->data[string->length - 2] = (unsigned char)(0x80 | ((cu1 >> 0) & 0x3F));
-				} else {
-					if (!GrowCharVec(&string->data, &string->length, &capacity, 3)) goto error;
-					string->data[string->length - 4] = (unsigned char)(0xE0 | ((cu1 >> 12) & 0x0F));
-					string->data[string->length - 3] = (unsigned char)(0x80 | ((cu1 >> 6) & 0x3F));
-					string->data[string->length - 2] = (unsigned char)(0x80 | ((cu1 >> 0) & 0x3F));
-				}
-
-				goto top;
-			}
-
-			char v2 = '\0';
-			char16_t cu2 = 0;
-			if (!ReadEscape(stream, &v2, &cu2, c)) return false;
-
-			if (cu2 == 0) {
-				if (!GrowCharVec(&string->data, &string->length, &capacity, 1)) goto error;
-				string->data[string->length - 2] = v2;
-				continue;
-			}
-
-			if (cu2 < 0xDC00 || cu2 > 0xDFFF) {
-				if (cu2 <= 0x7F) {
-					if (!GrowCharVec(&string->data, &string->length, &capacity, 1)) goto error;
-					string->data[string->length - 2] = (unsigned char)(0x00 | ((cu2 >> 0) & 0x7F));
-				} else if (cu2 <= 0x7FF) {
-					if (!GrowCharVec(&string->data, &string->length, &capacity, 2)) goto error;
-					string->data[string->length - 3] = (unsigned char)(0xC0 | ((cu2 >> 6) & 0xFF));
-					string->data[string->length - 2] = (unsigned char)(0x80 | ((cu2 >> 0) & 0x3F));
-				} else {
-					if (!GrowCharVec(&string->data, &string->length, &capacity, 3)) goto error;
-					string->data[string->length - 4] = (unsigned char)(0xE0 | ((cu2 >> 12) & 0x0F));
-					string->data[string->length - 3] = (unsigned char)(0x80 | ((cu2 >> 6) & 0x3F));
-					string->data[string->length - 2] = (unsigned char)(0x80 | ((cu2 >> 0) & 0x3F));
-				}
-
-				continue;
-			}
-
-			char32_t cp = ((((char32_t)cu1 & 0x3FF) << 10) | ((char32_t)cu2 & 0x3FF)) + 0x10000;
-
-			if (cp <= 0x7F) {
-				if (!GrowCharVec(&string->data, &string->length, &capacity, 1)) goto error;
-				string->data[string->length - 2] = (unsigned char)(0x00 | ((cp >> 0) & 0x7F));
-			} else if (cp <= 0x7FF) {
-				if (!GrowCharVec(&string->data, &string->length, &capacity, 2)) goto error;
-				string->data[string->length - 3] = (unsigned char)(0xC0 | ((cp >> 6) & 0xFF));
-				string->data[string->length - 2] = (unsigned char)(0x80 | ((cp >> 0) & 0x3F));
-			} else if (cp <= 0xFFFF) {
-				if (!GrowCharVec(&string->data, &string->length, &capacity, 3)) goto error;
-				string->data[string->length - 4] = (unsigned char)(0xE0 | ((cp >> 12) & 0x0F));
-				string->data[string->length - 3] = (unsigned char)(0x80 | ((cp >> 6) & 0x3F));
-				string->data[string->length - 2] = (unsigned char)(0x80 | ((cp >> 0) & 0x3F));
-			} else {
-				assert(cp <= 0x10FFFF);
-				if (!GrowCharVec(&string->data, &string->length, &capacity, 4)) goto error;
-				string->data[string->length - 5] = (unsigned char)(0xF0 | ((cp >> 18) & 0x07));
-				string->data[string->length - 4] = (unsigned char)(0x80 | ((cp >> 12) & 0x3F));
-				string->data[string->length - 3] = (unsigned char)(0x80 | ((cp >> 6) & 0x3F));
-				string->data[string->length - 2] = (unsigned char)(0x80 | ((cp >> 0) & 0x3F));
-			}
-
-			continue;
-		}
-
-		if (*c != EOF) {
+		if (*c != (unsigned char)'\\') {
 			if (!GrowCharVec(&string->data, &string->length, &capacity, 1)) goto error;
 			string->data[string->length - 2] = (char)*c;
 			continue;
 		}
 
-	error:
-		free(string->data);
-		*string = (Ezjson_String){0};
-		return false;
+		char v1 = '\0';
+		char16_t cu1 = 0;
+		if (!ReadEscape(stream, &v1, &cu1, c)) goto error;
+
+		if (cu1 == 0) {
+			if (!GrowCharVec(&string->data, &string->length, &capacity, 1)) goto error;
+			string->data[string->length - 2] = v1;
+			continue;
+		}
+
+		if ((*c = fgetc(stream)) != (unsigned char)'\\' || cu1 < 0xD800 || cu1 > 0xDBFF) {
+			if (!AppendCU(&string->data, &string->length, &capacity, cu1)) goto error;
+			goto top;
+		}
+
+		char v2 = '\0';
+		char16_t cu2 = 0;
+		if (!ReadEscape(stream, &v2, &cu2, c)) return false;
+
+		if (cu2 == 0) {
+			if (!GrowCharVec(&string->data, &string->length, &capacity, 1)) goto error;
+			string->data[string->length - 2] = v2;
+			continue;
+		}
+
+		if (cu2 < 0xDC00 || cu2 > 0xDFFF) {
+			if (!AppendCU(&string->data, &string->length, &capacity, cu2)) goto error;
+			continue;
+		}
+
+		char32_t cp = 0x10000 + (((cu1 & UINT32_C(0x3FF)) << 10) | (cu2 & UINT32_C(0x3FF)));
+		if (!AppendCU(&string->data, &string->length, &capacity, cp)) return false;
 	}
 
 	string->data[string->length - 1] = '\0';
@@ -246,12 +233,17 @@ static bool ReadString(FILE* stream, Ezjson_String* string, int* c) {
 	*c = fgetc(stream);
 	SkipWs(stream, c);
 	return true;
+
+error:
+	free(string->data);
+	*string = (Ezjson_String){0};
+	return false;
 }
 
 static bool ReadNumeral(FILE* stream, char** numeral, int* c) {
 	assert(stream != NULL);
 	assert(numeral != NULL && *numeral == NULL);
-	assert(c != NULL && *c != EOF && strchr("0123456789-", (char)*c) != NULL);
+	assert(c != NULL && *c != EOF && strchr("0123456789-", *c) != NULL);
 
 	*numeral = malloc(sizeof(char) * 2);
 	if (*numeral == NULL) return false;
@@ -264,7 +256,7 @@ static bool ReadNumeral(FILE* stream, char** numeral, int* c) {
 	if (*c == (unsigned char)'-') {
 		*c = fgetc(stream);
 		if (*c == EOF) goto error;
-		if (strchr("0123456789", (char)*c) == NULL) goto error;
+		if (strchr("0123456789", *c) == NULL) goto error;
 
 		if (!GrowCharVec(numeral, &size, &capacity, 1)) goto error;
 		(*numeral)[size - 2] = (char)*c;
@@ -276,7 +268,7 @@ static bool ReadNumeral(FILE* stream, char** numeral, int* c) {
 		while (true) {
 			*c = fgetc(stream);
 
-			if (*c == EOF || strchr("0123456789.eE", (char)*c) == NULL) {
+			if (*c == EOF || strchr("0123456789.eE", *c) == NULL) {
 				// Data is now: -?[1-9][0-9]*
 				goto success;
 			}
@@ -287,7 +279,7 @@ static bool ReadNumeral(FILE* stream, char** numeral, int* c) {
 	} else {
 		*c = fgetc(stream);
 
-		if (*c == EOF || strchr(".eE", (char)*c) == NULL) {
+		if (*c == EOF || strchr(".eE", *c) == NULL) {
 			// Data is now: -?0
 			goto success;
 		}
@@ -301,7 +293,7 @@ static bool ReadNumeral(FILE* stream, char** numeral, int* c) {
 	if (*c == (unsigned char)'.') {
 		*c = fgetc(stream);
 		if (*c == EOF) goto error;
-		if (strchr("0123456789", (char)*c) == NULL) goto error;
+		if (strchr("0123456789", *c) == NULL) goto error;
 
 		if (!GrowCharVec(numeral, &size, &capacity, 1)) goto error;
 		(*numeral)[size - 2] = (char)*c;
@@ -309,7 +301,7 @@ static bool ReadNumeral(FILE* stream, char** numeral, int* c) {
 		while (true) {
 			*c = fgetc(stream);
 
-			if (*c == EOF || strchr("0123456789eE", (char)*c) == NULL) {
+			if (*c == EOF || strchr("0123456789eE", *c) == NULL) {
 				// Data is now: -?([1-9][0-9]*|0)\.[0-9]+
 				goto success;
 			}
@@ -323,17 +315,17 @@ static bool ReadNumeral(FILE* stream, char** numeral, int* c) {
 
 	*c = fgetc(stream);
 	if (*c == EOF) goto error;
-	if (strchr("0123456789+-", (char)*c) == NULL) goto error;
+	if (strchr("0123456789+-", *c) == NULL) goto error;
 
 	if (!GrowCharVec(numeral, &size, &capacity, 1)) goto error;
 	(*numeral)[size - 2] = (char)*c;
 
 	// Data is now: -?(0|[1-9][0-9]*)(\.[0-9]+)?[eE][0-9+-]
 
-	if (strchr("+-", (char)*c) != NULL) {
+	if (strchr("+-", *c) != NULL) {
 		*c = fgetc(stream);
 		if (*c == EOF) goto error;
-		if (strchr("0123456789", (char)*c) == NULL) goto error;
+		if (strchr("0123456789", *c) == NULL) goto error;
 
 		if (!GrowCharVec(numeral, &size, &capacity, 1)) goto error;
 		(*numeral)[size - 2] = (char)*c;
@@ -344,7 +336,7 @@ static bool ReadNumeral(FILE* stream, char** numeral, int* c) {
 	while (true) {
 		*c = fgetc(stream);
 
-		if (*c == EOF || strchr("0123456789", (char)*c) == NULL) {
+		if (*c == EOF || strchr("0123456789", *c) == NULL) {
 			// Data is now: -?(0|[1-9][0-9]*)(\.[0-9]+)?[eE][+-]?[0-9]+
 			goto success;
 		}
@@ -428,13 +420,8 @@ static bool ReadArray(FILE* stream, Ezjson_Array* array, int* c) {
 		if (!GrowValueVec(&array->items, &array->length, &capacity, 1)) goto error;
 		array->items[array->length - 1] = item;
 
-		if (*c == (unsigned char)',') continue;
 		if (*c == (unsigned char)']') break;
-
-	error:
-		free(array->items);
-		*array = (Ezjson_Array){0};
-		return false;
+		if (*c != (unsigned char)',') goto error;
 	}
 
 	if (array->length != 0) {
@@ -446,6 +433,11 @@ static bool ReadArray(FILE* stream, Ezjson_Array* array, int* c) {
 	*c = fgetc(stream);
 	SkipWs(stream, c);
 	return true;
+
+error:
+	free(array->items);
+	*array = (Ezjson_Array){0};
+	return false;
 }
 
 static bool ReadValue(FILE* stream, Ezjson_Value* value, int* c) {
@@ -470,7 +462,7 @@ static bool ReadValue(FILE* stream, Ezjson_Value* value, int* c) {
 		return ReadString(stream, &value->string, c);
 	}
 
-	if (*c != EOF && strchr("0123456789-", (char)*c) != NULL) {
+	if (*c != EOF && strchr("0123456789-", *c) != NULL) {
 		*value = (Ezjson_Value){.kind = EZJSON_KIND_NUMBER, .number = 0.0};
 
 		char* numeral = NULL;
@@ -534,9 +526,9 @@ bool Ezjson_Read(FILE* stream, Ezjson_Value* json) {
 #endif
 	int c = fgetc(stream);
 
-	if (c == 0xEF) {  // Skip BOM
-		if ((c = fgetc(stream)) != 0xBB) return false;
-		if ((c = fgetc(stream)) != 0xBF) return false;
+	if (c == (unsigned char)'\xEF') {  // Skip BOM
+		if ((c = fgetc(stream)) != (unsigned char)'\xBB') return false;
+		if ((c = fgetc(stream)) != (unsigned char)'\xBF') return false;
 		c = fgetc(stream);
 	}
 

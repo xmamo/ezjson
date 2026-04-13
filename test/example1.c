@@ -103,7 +103,7 @@ int main(void) {
 	FILE* stream = fopen("example1.json", "r");
 #endif
 	Ezjson_Value actual = {0};
-	assert(Ezjson_Read(stream, &actual));
+	assert(Ezjson_FileRead(stream, &actual));
 	assert(Ezjson_Equal(&actual, &expected));
 	return EXIT_SUCCESS;
 }

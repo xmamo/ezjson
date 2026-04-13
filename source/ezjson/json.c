@@ -223,7 +223,7 @@ static bool ReadString(Stream* stream, Ezjson_String* string, int* c) {
 		*c = StreamGet(stream);
 
 	top:
-		if (*c == EOF)
+		if (*c == EOF || *c < (unsigned char)' ')
 			goto error;
 
 		if (*c == (unsigned char)'"')

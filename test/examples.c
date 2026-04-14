@@ -1,4 +1,5 @@
 #undef NDEBUG
+#define __STDC_WANT_LIB_EXT1__
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -149,12 +150,22 @@ static Ezjson_Value expected2 = {
 };
 
 int main(void) {
+#if (defined(__STDC_LIB_EXT1__) && defined(__STDC_WANT_LIB_EXT1__)) || (defined(__STDC_SECURE_LIB__) && defined(__STDC_WANT_SECURE_LIB__))
+	FILE* stream = NULL;
+	fopen_s(&stream, "example1.json", "r");
+#else
 	FILE* stream = fopen("example1.json", "r");
+#endif
 	Ezjson_Value actual = {0};
 	assert(Ezjson_ReadFile(stream, &actual));
 	assert(Ezjson_Equals(&actual, &expected1));
 
-	stream = fopen("example2.json", "r");
+#if (defined(__STDC_LIB_EXT1__) && defined(__STDC_WANT_LIB_EXT1__)) || (defined(__STDC_SECURE_LIB__) && defined(__STDC_WANT_SECURE_LIB__))
+	stream = NULL;
+	fopen_s(&stream, "example2.json", "r");
+#else
+	stream = fopen("example1.json", "r");
+#endif
 	actual = (Ezjson_Value){0};
 	assert(Ezjson_ReadFile(stream, &actual));
 	assert(Ezjson_Equals(&actual, &expected2));

@@ -678,6 +678,23 @@ bool Ezjson_Equals(const Ezjson_Value* left, const Ezjson_Value* right) {
 	return true;
 }
 
+Ezjson_Value* Ezjson_Lookup(const Ezjson_Value* json, const Ezjson_String* key) {
+	assert(json != NULL);
+	assert(key != NULL);
+
+	if (json->kind != EZJSON_KIND_OBJECT)
+		return NULL;
+	
+	for (size_t i = json->object.length; i > 0; --i) {
+		Ezjson_KeyValue* item = &json->object.items[i - 1];
+
+		if (item->key.length == key->length && memcmp(item->key.data, key->data, item->key.length) == 0)
+			return &item->value;
+	}
+
+	return NULL;
+}
+
 void Ezjson_Destroy(Ezjson_Value* json) {
 	assert(json != NULL);
 

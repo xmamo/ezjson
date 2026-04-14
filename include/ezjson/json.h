@@ -62,6 +62,8 @@ EZJSON_API bool Ezjson_ReadMemory(const void* memory, size_t size, Ezjson_Value*
 
 EZJSON_API bool Ezjson_Equals(const Ezjson_Value* left, const Ezjson_Value* right);
 
+EZJSON_API Ezjson_Value* Ezjson_Lookup(const Ezjson_Value* json, const Ezjson_String* key);
+
 EZJSON_API void Ezjson_Destroy(Ezjson_Value* json);
 
 EZJSON_END_DECLS

@@ -5,11 +5,7 @@
 
 #include <ezjson/json.h>
 
-#ifdef _WIN32
-int wmain(void) {
-#else
 int main(void) {
-#endif
 	Ezjson_Value json = {0};
 	assert(Ezjson_MemoryRead("\"\\\"\\/\\b\\f\\n\\r\\t\"", 16, &json));
 	assert(Ezjson_Equal(&json, &(Ezjson_Value){EZJSON_KIND_STRING, .string = {"\"/\b\f\n\r\t", 7}}));

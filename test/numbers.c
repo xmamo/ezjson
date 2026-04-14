@@ -5,11 +5,7 @@
 
 #include <ezjson/json.h>
 
-#ifdef _WIN32
-int wmain(void) {
-#else
 int main(void) {
-#endif
 	Ezjson_Value json = {0};
 	assert(Ezjson_MemoryRead("42", 2, &json));
 	assert(Ezjson_Equal(&json, &(Ezjson_Value){EZJSON_KIND_NUMBER, .number = 42.0}));

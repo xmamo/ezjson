@@ -1,11 +1,71 @@
 #undef NDEBUG
 #include <assert.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <ezjson/json.h>
 
-static Ezjson_Value expected = {
+static Ezjson_Value expected1 = {
+	.kind = EZJSON_KIND_OBJECT,
+	.object.length = 1,
+	.object.items = (Ezjson_KeyValue[]){
+		{
+			.key = {"Image", 5},
+			.value.kind = EZJSON_KIND_OBJECT,
+			.value.object.length = 6,
+			.value.object.items = (Ezjson_KeyValue[]){
+				{
+					.key = {"Width", 5},
+					.value = {EZJSON_KIND_NUMBER, .number = 800.0},
+				},
+				{
+					.key = {"Height", 6},
+					.value = {EZJSON_KIND_NUMBER, .number = 600.0},
+				},
+				{
+					.key = {"Title", 5},
+					.value = {EZJSON_KIND_STRING, .string = {"View from 15th Floor", 20}},
+				},
+				{
+					.key = {"Thumbnail", 9},
+					.value.kind = EZJSON_KIND_OBJECT,
+					.value.object.length = 3,
+					.value.object.items = (Ezjson_KeyValue[]){
+						{
+							.key = {"Url", 3},
+							.value = {EZJSON_KIND_STRING, .string = {"http://www.example.com/image/481989943", 38}},
+						},
+						{
+							.key = {"Height", 6},
+							.value = {EZJSON_KIND_NUMBER, .number = 125.0}
+						},
+						{
+							.key = {"Width", 5},
+							.value = {EZJSON_KIND_NUMBER, .number = 100.0},
+						},
+					},
+				},
+				{
+					.key = {"Animated", 8},
+					.value.kind = EZJSON_KIND_FALSE,
+				},
+				{
+					.key = {"IDs", 3},
+					.value.kind = EZJSON_KIND_ARRAY,
+					.value.array.length = 4,
+					.value.array.items = (Ezjson_Value[]){
+						{EZJSON_KIND_NUMBER, .number = 116.0},
+						{EZJSON_KIND_NUMBER, .number = 943.0},
+						{EZJSON_KIND_NUMBER, .number = 234.0},
+						{EZJSON_KIND_NUMBER, .number = 38793.0},
+					},
+				},
+			},
+		},
+	},
+};
+
+static Ezjson_Value expected2 = {
 	.kind = EZJSON_KIND_ARRAY,
 	.array.length = 2,
 	.array.items = (Ezjson_Value[]){
@@ -88,16 +148,16 @@ static Ezjson_Value expected = {
 	},
 };
 
-#ifdef _WIN32
-int wmain(void) {
-	FILE* stream = NULL;
-	_wfopen_s(&stream, L"example2.json", L"r");
-#else
 int main(void) {
-	FILE* stream = fopen("example2.json", "r");
-#endif
+	FILE* stream = fopen("example1.json", "r");
 	Ezjson_Value actual = {0};
 	assert(Ezjson_FileRead(stream, &actual));
-	assert(Ezjson_Equal(&actual, &expected));
+	assert(Ezjson_Equal(&actual, &expected1));
+
+	stream = fopen("example2.json", "r");
+	actual = (Ezjson_Value){0};
+	assert(Ezjson_FileRead(stream, &actual));
+	assert(Ezjson_Equal(&actual, &expected2));
+
 	return EXIT_SUCCESS;
 }

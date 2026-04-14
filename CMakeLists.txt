@@ -22,13 +22,9 @@ target_sources(ezjson
 )
 
 if(BUILD_TESTING)
-	add_executable(test-example1)
-	target_sources(test-example1 PRIVATE test/example1.c)
-	target_link_libraries(test-example1 PRIVATE ezjson)
-
-	add_executable(test-example2)
-	target_sources(test-example2 PRIVATE test/example2.c)
-	target_link_libraries(test-example2 PRIVATE ezjson)
+	add_executable(test-examples)
+	target_sources(test-examples PRIVATE test/examples.c)
+	target_link_libraries(test-examples PRIVATE ezjson)
 
 	add_executable(test-strings)
 	target_sources(test-strings PRIVATE test/strings.c)
@@ -39,14 +35,8 @@ if(BUILD_TESTING)
 	target_link_libraries(test-numbers PRIVATE ezjson)
 
 	add_test(
-		NAME test-example1
-		COMMAND test-example1
-		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test"
-	)
-
-	add_test(
-		NAME test-example2
-		COMMAND test-example2
+		NAME test-examples
+		COMMAND test-examples
 		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test"
 	)
 

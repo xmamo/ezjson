@@ -14,8 +14,7 @@ typedef enum Ezjson_Kind {
 	EZJSON_KIND_ARRAY,
 	EZJSON_KIND_STRING,
 	EZJSON_KIND_NUMBER,
-	EZJSON_KIND_TRUE,
-	EZJSON_KIND_FALSE,
+	EZJSON_KIND_BOOL,
 	EZJSON_KIND_NULL,
 } Ezjson_Kind;
 
@@ -48,6 +47,7 @@ struct Ezjson_Value {
 		Ezjson_Array array;
 		Ezjson_String string;
 		double number;
+		bool boolean;
 	};
 };
 

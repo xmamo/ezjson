@@ -223,7 +223,7 @@ static bool ReadString(Stream* stream, Ezjson_String* string, int* c) {
 		*c = StreamGet(stream);
 
 	top:
-		if (*c == EOF || *c < (unsigned char)' ')
+		if (*c == EOF || *c <= 0x1F)
 			goto error;
 
 		if (*c == (unsigned char)'"')
@@ -520,7 +520,7 @@ static bool ReadValue(Stream* stream, Ezjson_Value* value, int* c) {
 	}
 
 	if (*c == (unsigned char)'t') {
-		value->kind = EZJSON_KIND_TRUE;
+		*value = (Ezjson_Value){EZJSON_KIND_BOOL, .boolean = true};
 
 		if ((*c = StreamGet(stream)) != (unsigned char)'r') return false;
 		if ((*c = StreamGet(stream)) != (unsigned char)'u') return false;
@@ -532,7 +532,7 @@ static bool ReadValue(Stream* stream, Ezjson_Value* value, int* c) {
 	}
 
 	if (*c == (unsigned char)'f') {
-		value->kind = EZJSON_KIND_FALSE;
+		*value = (Ezjson_Value){EZJSON_KIND_BOOL, .boolean = false};
 
 		if ((*c = StreamGet(stream)) != (unsigned char)'a') return false;
 		if ((*c = StreamGet(stream)) != (unsigned char)'l') return false;
@@ -667,6 +667,11 @@ bool Ezjson_Equals(const Ezjson_Value* left, const Ezjson_Value* right) {
 
 	if (left->kind == EZJSON_KIND_NUMBER) {
 		if (left->number != right->number)
+			return false;
+	}
+
+	if (left->kind == EZJSON_KIND_BOOL) {
+		if (left->boolean != right->boolean)
 			return false;
 	}
 

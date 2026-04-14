@@ -1,6 +1,7 @@
 #undef NDEBUG
 #define __STDC_WANT_LIB_EXT1__
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -48,7 +49,7 @@ static Ezjson_Value expected1 = {
 				},
 				{
 					.key = {"Animated", 8},
-					.value.kind = EZJSON_KIND_FALSE,
+					.value = {EZJSON_KIND_BOOL, .boolean = false},
 				},
 				{
 					.key = {"IDs", 3},

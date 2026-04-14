@@ -13,12 +13,8 @@ set_target_properties(ezjson PROPERTIES DEFINE_SYMBOL EZJSON_EXPORTS)
 target_compile_features(ezjson PUBLIC c_std_11)
 
 target_sources(ezjson
-	PUBLIC FILE_SET HEADERS BASE_DIRS include FILES
-		include/ezjson/api.h
-		include/ezjson/json.h
-
-	PRIVATE
-		source/ezjson/json.c
+	PUBLIC FILE_SET HEADERS BASE_DIRS include FILES include/ezjson.h
+	PRIVATE source/ezjson.c
 )
 
 if(BUILD_TESTING)

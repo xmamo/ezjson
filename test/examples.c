@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <ezjson/json.h>
+#include <ezjson.h>
 
 static Ezjson_Value expected1 = {
 	.kind = EZJSON_KIND_OBJECT,

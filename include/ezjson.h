@@ -1,14 +1,26 @@
-#ifndef EZJSON_JSON_H
-#define EZJSON_JSON_H
+#ifndef EZJSON_H
+#define EZJSON_H
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 
-#include <ezjson/api.h>
-
 #ifdef __cplusplus
 extern "C" {
+#endif
+
+#if defined(_WIN32) && defined(_MSC_VER) && defined(EZJSON_EXPORTS)
+#define EZJSON_API __declspec(dllexport)
+#elif defined(_WIN32) && defined(_MSC_VER) && !defined(EZJSON_EXPORTS)
+#define EZJSON_API __declspec(dllimport)
+#elif defined(_WIN32) && defined(__GNUC__) && defined(EZJSON_EXPORTS)
+#define EZJSON_API __attribute__((dllexport))
+#elif defined(_WIN32) && defined(__GNUC__) && !defined(EZJSON_EXPORTS)
+#define EZJSON_API __attribute__((dllimport))
+#elif defined(__unix__) && defined(__GNUC__) && defined(EZJSON_EXPORTS)
+#define EZJSON_API __attribute__((visibility("default")))
+#else
+#define EZJSON_API
 #endif
 
 typedef enum Ezjson_Kind {

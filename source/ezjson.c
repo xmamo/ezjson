@@ -1,8 +1,8 @@
 #ifdef __unix__
-	#define _DEFAULT_SOURCE
+#define _DEFAULT_SOURCE
 #endif
 
-#include "ezjson/json.h"
+#include "ezjson.h"
 
 #include <assert.h>
 #include <limits.h>
@@ -15,45 +15,45 @@
 #include <uchar.h>
 
 #if defined(__unix__)
-	typedef FILE Stream;
-	#define StreamGet fgetc
+typedef FILE Stream;
+#define StreamGet fgetc
 #else
-	typedef struct Stream {
-		int (*get)(void* stream);
-	} Stream;
+typedef struct Stream {
+	int (*get)(void* stream);
+} Stream;
 
-	typedef struct FileStream {
-		Stream super;
-		FILE* file;
-	} FileStream;
+typedef struct FileStream {
+	Stream super;
+	FILE* file;
+} FileStream;
 
-	typedef struct MemoryStream {
-		Stream super;
-		const unsigned char* data;
-		size_t size;
-	} MemoryStream;
+typedef struct MemoryStream {
+	Stream super;
+	const unsigned char* data;
+	size_t size;
+} MemoryStream;
 
-	static int StreamGet(Stream* stream) {
-		assert(stream != NULL && stream->get != NULL);
-		return stream->get(stream);
+static int StreamGet(Stream* stream) {
+	assert(stream != NULL && stream->get != NULL);
+	return stream->get(stream);
+}
+
+static int FileStreamGet(void* stream) {
+	FileStream* fileStream = stream;
+	return fgetc(fileStream->file);
+}
+
+static int MemoryStreamGet(void* stream) {
+	MemoryStream* memoryStream = stream;
+
+	if (memoryStream->size != 0) {
+		memoryStream->data += 1;
+		memoryStream->size -= 1;
+		return memoryStream->data[-1];
+	} else {
+		return EOF;
 	}
-
-	static int FileStreamGet(void* stream) {
-		FileStream* fileStream = stream;
-		return fgetc(fileStream->file);
-	}
-
-	static int MemoryStreamGet(void* stream) {
-		MemoryStream* memoryStream = stream;
-
-		if (memoryStream->size != 0) {
-			memoryStream->data += 1;
-			memoryStream->size -= 1;
-			return memoryStream->data[-1];
-		} else {
-			return EOF;
-		}
-	}
+}
 #endif
 
 static bool GrowVec(void** data, size_t size, size_t* length, size_t* capacity, size_t delta) {

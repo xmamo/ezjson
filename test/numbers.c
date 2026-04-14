@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <ezjson/json.h>
+#include <ezjson.h>
 
 int main(void) {
 	Ezjson_Value json = {0};

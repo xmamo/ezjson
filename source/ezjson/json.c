@@ -410,11 +410,13 @@ static bool ReadObject(Stream* stream, Ezjson_Object* object, int* c) {
 	assert(object != NULL && object->items == NULL && object->length == 0);
 	assert(c != NULL && *c == (unsigned char)'{');
 
+	*c = StreamGet(stream);
+	SkipWs(stream, c);
+	if (*c == (unsigned char)'}') return true;
+
 	size_t capacity = 0;
 
 	while (true) {
-		*c = StreamGet(stream);
-		SkipWs(stream, c);
 		if (*c != (unsigned char)'"') goto error1;
 
 		if (!GrowKeyValueVec(&object->items, &object->length, &capacity, 1)) goto error1;
@@ -425,16 +427,11 @@ static bool ReadObject(Stream* stream, Ezjson_Object* object, int* c) {
 
 		*c = StreamGet(stream);
 		if (!ReadValue(stream, &object->items[object->length - 1].value, c)) goto error2;
-		if (*c == (unsigned char)',') continue;
-		if (*c == (unsigned char)'}') break;
 
-	error2:
-		free(object->items[object->length - 1].key.data);
-		object->items[object->length - 1].key = (Ezjson_String){0};
-	error1:
-		free(object->items);
-		*object = (Ezjson_Object){0};
-		return false;
+		if (*c == (unsigned char)'}') break;
+		if (*c != (unsigned char)',') goto error2;
+		*c = StreamGet(stream);
+		SkipWs(stream, c);
 	}
 
 	if (object->length != 0) {
@@ -446,6 +443,14 @@ static bool ReadObject(Stream* stream, Ezjson_Object* object, int* c) {
 	*c = StreamGet(stream);
 	SkipWs(stream, c);
 	return true;
+
+error2:
+	free(object->items[object->length - 1].key.data);
+	object->items[object->length - 1].key = (Ezjson_String){0};
+error1:
+	free(object->items);
+	*object = (Ezjson_Object){0};
+	return false;
 }
 
 static bool ReadArray(Stream* stream, Ezjson_Array* array, int* c) {
@@ -453,10 +458,13 @@ static bool ReadArray(Stream* stream, Ezjson_Array* array, int* c) {
 	assert(array != NULL && array->items == NULL && array->length == 0);
 	assert(c != NULL && *c == '[');
 
+	*c = StreamGet(stream);
+	SkipWs(stream, c);
+	if (*c == (unsigned char)']') return true;
+
 	size_t capacity = 0;
 
 	while (true) {
-		*c = StreamGet(stream);
 		Ezjson_Value item = {0};
 		if (!ReadValue(stream, &item, c)) goto error;
 		if (*c == EOF) goto error;
@@ -466,6 +474,7 @@ static bool ReadArray(Stream* stream, Ezjson_Array* array, int* c) {
 
 		if (*c == (unsigned char)']') break;
 		if (*c != (unsigned char)',') goto error;
+		*c = StreamGet(stream);
 	}
 
 	if (array->length != 0) {

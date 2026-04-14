@@ -156,6 +156,35 @@ static bool AppendCU(char** data, size_t* length, size_t* capacity, char32_t cu)
 	return false;
 }
 
+static void DestroyObject(Ezjson_Object* object) {
+	assert(object != NULL && (object->length != 0 || object->items == NULL));
+
+	for (size_t i = 0; i < object->length; ++i) {
+		Ezjson_KeyValue* item = &object->items[i];
+		free(item->key.data);
+		Ezjson_Destroy(&item->value);
+	}
+
+	free(object->items);
+	*object = (Ezjson_Object){0};
+}
+
+static void DestroyArray(Ezjson_Array* array) {
+	assert(array != NULL && (array->length != 0 || array->items == NULL));
+
+	for (size_t i = 0; i < array->length; ++i) {
+		Ezjson_Destroy(&array->items[i]);
+	}
+
+	free(array->items);
+	*array = (Ezjson_Array){0};
+}
+
+static void DestroyString(Ezjson_String* string) {
+	free(string->data);
+	*string = (Ezjson_String){0};
+}
+
 static void SkipWs(Stream* stream, int* c) {
 	assert(stream != NULL);
 	assert(c != NULL && (*c == EOF || (*c >= 0 && *c <= UCHAR_MAX)));
@@ -279,8 +308,7 @@ static bool ReadString(Stream* stream, Ezjson_String* string, int* c) {
 	return true;
 
 error:
-	free(string->data);
-	*string = (Ezjson_String){NULL};
+	DestroyString(string);
 	return false;
 }
 
@@ -417,19 +445,19 @@ static bool ReadObject(Stream* stream, Ezjson_Object* object, int* c) {
 	size_t capacity = 0;
 
 	while (true) {
-		if (*c != (unsigned char)'"') goto error1;
+		if (*c != (unsigned char)'"') goto error;
 
-		if (!GrowKeyValueVec(&object->items, &object->length, &capacity, 1)) goto error1;
+		if (!GrowKeyValueVec(&object->items, &object->length, &capacity, 1)) goto error;
 		object->items[object->length - 1] = (Ezjson_KeyValue){0};
 
-		if (!ReadString(stream, &object->items[object->length - 1].key, c)) goto error1;
-		if (*c != (unsigned char)':') goto error1;
+		if (!ReadString(stream, &object->items[object->length - 1].key, c)) goto error;
+		if (*c != (unsigned char)':') goto error;
 
 		*c = StreamGet(stream);
-		if (!ReadValue(stream, &object->items[object->length - 1].value, c)) goto error2;
+		if (!ReadValue(stream, &object->items[object->length - 1].value, c)) goto error;
 
 		if (*c == (unsigned char)'}') break;
-		if (*c != (unsigned char)',') goto error2;
+		if (*c != (unsigned char)',') goto error;
 		*c = StreamGet(stream);
 		SkipWs(stream, c);
 	}
@@ -444,12 +472,8 @@ static bool ReadObject(Stream* stream, Ezjson_Object* object, int* c) {
 	SkipWs(stream, c);
 	return true;
 
-error2:
-	free(object->items[object->length - 1].key.data);
-	object->items[object->length - 1].key = (Ezjson_String){0};
-error1:
-	free(object->items);
-	*object = (Ezjson_Object){0};
+error:
+	DestroyObject(object);
 	return false;
 }
 
@@ -708,33 +732,10 @@ void Ezjson_Destroy(Ezjson_Value* json) {
 	assert(json != NULL);
 
 	if (json->kind == EZJSON_KIND_OBJECT) {
-		for (size_t i = 0; i < json->object.length; ++i) {
-			Ezjson_KeyValue* item = &json->object.items[i];
-			free(item->key.data);
-			Ezjson_Destroy(&item->value);
-		}
-
-		free(json->object.items);
-		json->object.items = NULL;
-		json->object.length = 0;
-		return;
-	}
-
-	if (json->kind == EZJSON_KIND_ARRAY) {
-		for (size_t i = 0; i < json->array.length; ++i) {
-			Ezjson_Destroy(&json->array.items[i]);
-		}
-
-		free(json->array.items);
-		json->array.items = NULL;
-		json->array.length = 0;
-		return;
-	}
-
-	if (json->kind == EZJSON_KIND_STRING) {
-		free(json->string.data);
-		json->string.data = NULL;
-		json->string.length = 0;
-		return;
+		DestroyObject(&json->object);
+	} else if (json->kind == EZJSON_KIND_ARRAY) {
+		DestroyArray(&json->array);
+	} else if (json->kind == EZJSON_KIND_STRING) {
+		DestroyString(&json->string);
 	}
 }

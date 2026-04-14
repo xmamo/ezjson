@@ -56,11 +56,11 @@ struct Ezjson_KeyValue {
 	Ezjson_Value value;
 };
 
-EZJSON_API bool Ezjson_FileRead(FILE* file, Ezjson_Value* json);
+EZJSON_API bool Ezjson_ReadFile(FILE* file, Ezjson_Value* json);
 
-EZJSON_API bool Ezjson_MemoryRead(const void* memory, size_t size, Ezjson_Value* json);
+EZJSON_API bool Ezjson_ReadMemory(const void* memory, size_t size, Ezjson_Value* json);
 
-EZJSON_API bool Ezjson_Equal(const Ezjson_Value* left, const Ezjson_Value* right);
+EZJSON_API bool Ezjson_Equals(const Ezjson_Value* left, const Ezjson_Value* right);
 
 EZJSON_API void Ezjson_Destroy(Ezjson_Value* json);
 

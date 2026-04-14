@@ -575,7 +575,7 @@ static bool Ezjson_Read(Stream* stream, Ezjson_Value* json, int* c) {
 	return ReadValue(stream, json, c);
 }
 
-bool Ezjson_FileRead(FILE* file, Ezjson_Value* json) {
+bool Ezjson_ReadFile(FILE* file, Ezjson_Value* json) {
 	assert(file != NULL);
 	assert(json != NULL);
 
@@ -603,7 +603,7 @@ bool Ezjson_FileRead(FILE* file, Ezjson_Value* json) {
 #endif
 }
 
-bool Ezjson_MemoryRead(const void* memory, size_t size, Ezjson_Value* json) {
+bool Ezjson_ReadMemory(const void* memory, size_t size, Ezjson_Value* json) {
 	assert(memory != NULL || size == 0);
 	assert(json != NULL);
 
@@ -621,7 +621,7 @@ bool Ezjson_MemoryRead(const void* memory, size_t size, Ezjson_Value* json) {
 #endif
 }
 
-bool Ezjson_Equal(const Ezjson_Value* left, const Ezjson_Value* right) {
+bool Ezjson_Equals(const Ezjson_Value* left, const Ezjson_Value* right) {
 	assert(left != NULL);
 	assert(right != NULL);
 
@@ -642,7 +642,7 @@ bool Ezjson_Equal(const Ezjson_Value* left, const Ezjson_Value* right) {
 			if (memcmp(leftItem->key.data, rightItem->key.data, leftItem->key.length) != 0)
 				return false;
 
-			if (!Ezjson_Equal(&leftItem->value, &rightItem->value))
+			if (!Ezjson_Equals(&leftItem->value, &rightItem->value))
 				return false;
 		}
 	}
@@ -652,7 +652,7 @@ bool Ezjson_Equal(const Ezjson_Value* left, const Ezjson_Value* right) {
 			return false;
 
 		for (size_t i = 0; i < left->array.length; ++i) {
-			if (!Ezjson_Equal(&left->array.items[i], &right->array.items[i]))
+			if (!Ezjson_Equals(&left->array.items[i], &right->array.items[i]))
 				return false;
 		}
 	}

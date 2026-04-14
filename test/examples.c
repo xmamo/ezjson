@@ -151,13 +151,13 @@ static Ezjson_Value expected2 = {
 int main(void) {
 	FILE* stream = fopen("example1.json", "r");
 	Ezjson_Value actual = {0};
-	assert(Ezjson_FileRead(stream, &actual));
-	assert(Ezjson_Equal(&actual, &expected1));
+	assert(Ezjson_ReadFile(stream, &actual));
+	assert(Ezjson_Equals(&actual, &expected1));
 
 	stream = fopen("example2.json", "r");
 	actual = (Ezjson_Value){0};
-	assert(Ezjson_FileRead(stream, &actual));
-	assert(Ezjson_Equal(&actual, &expected2));
+	assert(Ezjson_ReadFile(stream, &actual));
+	assert(Ezjson_Equals(&actual, &expected2));
 
 	return EXIT_SUCCESS;
 }

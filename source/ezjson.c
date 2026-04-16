@@ -6,6 +6,7 @@
 
 #include <assert.h>
 #include <limits.h>
+#include <locale.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -20,6 +21,9 @@ typedef FILE Stream;
 #else
 typedef struct Stream {
 	int (*get)(void* stream);
+#ifdef _WIN32
+	_locale_t locale;
+#endif
 } Stream;
 
 typedef struct FileStream {
@@ -566,7 +570,11 @@ static bool ReadValue(Stream* stream, Ezjson_Value* value, int* c) {
 		if (!ReadNumeral(stream, &numeral, c)) return false;
 
 		char* end = numeral;
+#ifdef _WIN32
+		value->number = _strtod_l(numeral, &end, stream->locale);
+#else
 		value->number = strtod(numeral, &end);
+#endif
 		bool ok = *end == '\0';
 		free(numeral);
 		return ok;
@@ -618,11 +626,14 @@ bool Ezjson_ReadFile(FILE* file, Ezjson_Value* json) {
 	funlockfile(file);
 	return r;
 #elif defined(_WIN32)
+	_locale_t cLocale = _wcreate_locale(LC_ALL, L"C");
+	if (cLocale == NULL) return false;
 	_lock_file(file);
 	int c = 0;
-	bool r = Ezjson_Read(&(FileStream){{FileStreamGet}, file}.super, json, &c);
+	bool r = Ezjson_Read(&(FileStream){{FileStreamGet, cLocale}, file}.super, json, &c);
 	ungetc(c, file);
 	_unlock_file(file);
+	_free_locale(cLocale);
 	return r;
 #else
 	int c = 0;
@@ -636,11 +647,17 @@ bool Ezjson_ReadMemory(const void* memory, size_t size, Ezjson_Value* json) {
 	assert(memory != NULL || size == 0);
 	assert(json != NULL);
 
-#ifdef __unix__
+#if defined(__unix__)
 	FILE* file = fmemopen((void*)memory, size, "r");
 	if (file == NULL) return false;
 	bool r = Ezjson_Read(file, json, &(int){0});
 	fclose(file);
+	return r;
+#elif defined(_WIN32)
+	_locale_t cLocale = _wcreate_locale(LC_ALL, L"C");
+	if (cLocale == NULL) return false;
+	bool r = Ezjson_Read(&(MemoryStream){{MemoryStreamGet, cLocale}, memory, size}.super, json, &(int){0});
+	_free_locale(cLocale);
 	return r;
 #else
 	return Ezjson_Read(&(MemoryStream){{MemoryStreamGet}, memory, size}.super, json, &(int){0});

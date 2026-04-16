@@ -48,3 +48,6 @@ if(BUILD_TESTING)
 		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test"
 	)
 endif()
+
+install(TARGETS ezjson EXPORT ezjson-exports FILE_SET HEADERS)
+install(EXPORT ezjson-exports DESTINATION cmake FILE EzjsonTargets.cmake)

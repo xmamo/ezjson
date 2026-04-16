@@ -724,11 +724,11 @@ Ezjson_Value* Ezjson_Lookup(const Ezjson_Value* json, const Ezjson_String* key) 
 void Ezjson_Destroy(Ezjson_Value* json) {
 	assert(json != NULL);
 
-	if (json->kind == EZJSON_OBJECT) {
-		DestroyObject(&json->object);
+	if (json->kind == EZJSON_STRING) {
+		DestroyString(&json->string);
 	} else if (json->kind == EZJSON_ARRAY) {
 		DestroyArray(&json->array);
-	} else if (json->kind == EZJSON_STRING) {
-		DestroyString(&json->string);
+	} else if (json->kind == EZJSON_OBJECT) {
+		DestroyObject(&json->object);
 	}
 }

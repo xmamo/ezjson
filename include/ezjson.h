@@ -36,7 +36,7 @@ typedef enum Ezjson_Kind {
 
 typedef struct Ezjson_String {
 	char* data;
-	size_t length;
+	size_t size;
 } Ezjson_String;
 
 typedef struct Ezjson_Array {

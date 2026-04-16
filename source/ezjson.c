@@ -82,13 +82,13 @@ static bool GrowVec(void** data, size_t size, size_t* length, size_t* capacity, 
 	return true;
 }
 
-static bool GrowCharVec(char** data, size_t* length, size_t* capacity, size_t delta) {
+static bool GrowCharVec(char** data, size_t* size, size_t* capacity, size_t delta) {
 	assert(data != NULL);
-	assert(length != NULL);
+	assert(size != NULL);
 	assert(capacity != NULL);
 
 	void* p = *data;
-	bool r = GrowVec(&p, sizeof(char), length, capacity, delta);
+	bool r = GrowVec(&p, sizeof(char), size, capacity, delta);
 	*data = p;
 	return r;
 }
@@ -115,39 +115,39 @@ static bool GrowKeyValueVec(Ezjson_KeyValue** data, size_t* length, size_t* capa
 	return r;
 }
 
-static bool AppendCu(char** data, size_t* length, size_t* capacity, char32_t cu) {
+static bool AppendCu(char** data, size_t* size, size_t* capacity, char32_t cu) {
 	assert(data != NULL);
-	assert(length != NULL);
+	assert(size != NULL);
 	assert(capacity != NULL);
 	assert(cu <= 0x10FFFF);
 
 	if (cu <= 0x7F) {
-		if (!GrowCharVec(data, length, capacity, 1)) return false;
-		(*data)[*length - 2] = 0x00 | ((cu >> 0) & 0x7F);
+		if (!GrowCharVec(data, size, capacity, 1)) return false;
+		(*data)[*size - 2] = 0x00 | ((cu >> 0) & 0x7F);
 		return true;
 	}
 
 	if (cu <= 0x7FF) {
-		if (!GrowCharVec(data, length, capacity, 2)) return false;
-		(*data)[*length - 3] = 0xC0 | ((cu >> 6) & 0xFF);
-		(*data)[*length - 2] = 0x80 | ((cu >> 0) & 0x3F);
+		if (!GrowCharVec(data, size, capacity, 2)) return false;
+		(*data)[*size - 3] = 0xC0 | ((cu >> 6) & 0xFF);
+		(*data)[*size - 2] = 0x80 | ((cu >> 0) & 0x3F);
 		return true;
 	}
 
 	if (cu <= 0xFFFF) {
-		if (!GrowCharVec(data, length, capacity, 3)) return false;
-		(*data)[*length - 4] = 0xE0 | ((cu >> 12) & 0x0F);
-		(*data)[*length - 3] = 0x80 | ((cu >> 6) & 0x3F);
-		(*data)[*length - 2] = 0x80 | ((cu >> 0) & 0x3F);
+		if (!GrowCharVec(data, size, capacity, 3)) return false;
+		(*data)[*size - 4] = 0xE0 | ((cu >> 12) & 0x0F);
+		(*data)[*size - 3] = 0x80 | ((cu >> 6) & 0x3F);
+		(*data)[*size - 2] = 0x80 | ((cu >> 0) & 0x3F);
 		return true;
 	}
 
 	if (cu <= 0x1FFFFF) {
-		if (!GrowCharVec(data, length, capacity, 4)) return false;
-		(*data)[*length - 5] = 0xF0 | ((cu >> 18) & 0x07);
-		(*data)[*length - 4] = 0x80 | ((cu >> 12) & 0x3F);
-		(*data)[*length - 3] = 0x80 | ((cu >> 6) & 0x3F);
-		(*data)[*length - 2] = 0x80 | ((cu >> 0) & 0x3F);
+		if (!GrowCharVec(data, size, capacity, 4)) return false;
+		(*data)[*size - 5] = 0xF0 | ((cu >> 18) & 0x07);
+		(*data)[*size - 4] = 0x80 | ((cu >> 12) & 0x3F);
+		(*data)[*size - 3] = 0x80 | ((cu >> 6) & 0x3F);
+		(*data)[*size - 2] = 0x80 | ((cu >> 0) & 0x3F);
 		return true;
 	}
 
@@ -357,12 +357,12 @@ static bool ReadEscape(Stream* stream, char* v, char16_t* cu, int* c) {
 
 static bool ReadString(Stream* stream, Ezjson_String* string, int* c) {
 	assert(stream != NULL);
-	assert(string != NULL && string->data == NULL && string->length == 0);
+	assert(string != NULL && string->data == NULL && string->size == 0);
 	assert(c != NULL && *c == (unsigned char)'"');
 
 	string->data = malloc(sizeof(char));
 	if (string->data == NULL) return false;
-	string->length = 1;
+	string->size = 1;
 	size_t capacity = 1;
 
 	while (true) {
@@ -376,8 +376,8 @@ static bool ReadString(Stream* stream, Ezjson_String* string, int* c) {
 			break;
 
 		if (*c != (unsigned char)'\\') {
-			if (!GrowCharVec(&string->data, &string->length, &capacity, 1)) goto Error;
-			string->data[string->length - 2] = (char)*c;
+			if (!GrowCharVec(&string->data, &string->size, &capacity, 1)) goto Error;
+			string->data[string->size - 2] = (char)*c;
 			continue;
 		}
 
@@ -386,13 +386,13 @@ static bool ReadString(Stream* stream, Ezjson_String* string, int* c) {
 		if (!ReadEscape(stream, &v1, &cu1, c)) goto Error;
 
 		if (cu1 == 0) {
-			if (!GrowCharVec(&string->data, &string->length, &capacity, 1)) goto Error;
-			string->data[string->length - 2] = v1;
+			if (!GrowCharVec(&string->data, &string->size, &capacity, 1)) goto Error;
+			string->data[string->size - 2] = v1;
 			continue;
 		}
 
 		if ((*c = StreamGet(stream)) != (unsigned char)'\\' || cu1 < 0xD800 || cu1 > 0xDBFF) {
-			if (!AppendCu(&string->data, &string->length, &capacity, cu1)) goto Error;
+			if (!AppendCu(&string->data, &string->size, &capacity, cu1)) goto Error;
 			goto Top;
 		}
 
@@ -401,24 +401,24 @@ static bool ReadString(Stream* stream, Ezjson_String* string, int* c) {
 		if (!ReadEscape(stream, &v2, &cu2, c)) return false;
 
 		if (cu2 == 0) {
-			if (!GrowCharVec(&string->data, &string->length, &capacity, 1)) goto Error;
-			string->data[string->length - 2] = v2;
+			if (!GrowCharVec(&string->data, &string->size, &capacity, 1)) goto Error;
+			string->data[string->size - 2] = v2;
 			continue;
 		}
 
 		if (cu2 < 0xDC00 || cu2 > 0xDFFF) {
-			if (!AppendCu(&string->data, &string->length, &capacity, cu2)) goto Error;
+			if (!AppendCu(&string->data, &string->size, &capacity, cu2)) goto Error;
 			continue;
 		}
 
 		char32_t cp = 0x10000 + (((cu1 & UINT32_C(0x3FF)) << 10) | (cu2 & UINT32_C(0x3FF)));
-		if (!AppendCu(&string->data, &string->length, &capacity, cp)) return false;
+		if (!AppendCu(&string->data, &string->size, &capacity, cp)) return false;
 	}
 
-	string->data[string->length - 1] = '\0';
-	char* newData = realloc(string->data, sizeof(char) * string->length);
+	string->data[string->size - 1] = '\0';
+	char* newData = realloc(string->data, sizeof(char) * string->size);
 	if (newData != NULL) string->data = newData;
-	string->length -= 1;
+	string->size -= 1;
 
 	*c = StreamGet(stream);
 	SkipWs(stream, c);
@@ -665,10 +665,10 @@ bool Ezjson_Equals(const Ezjson_Value* left, const Ezjson_Value* right) {
 	}
 
 	if (left->kind == EZJSON_STRING) {
-		if (left->string.length != right->string.length)
+		if (left->string.size != right->string.size)
 			return false;
 
-		if (memcmp(left->string.data, right->string.data, left->string.length) != 0)
+		if (memcmp(left->string.data, right->string.data, left->string.size) != 0)
 			return false;
 	}
 
@@ -690,10 +690,10 @@ bool Ezjson_Equals(const Ezjson_Value* left, const Ezjson_Value* right) {
 			const Ezjson_KeyValue* leftItem = &left->object.items[i];
 			const Ezjson_KeyValue* rightItem = &right->object.items[i];
 
-			if (leftItem->key.length != rightItem->key.length)
+			if (leftItem->key.size != rightItem->key.size)
 				return false;
 
-			if (memcmp(leftItem->key.data, rightItem->key.data, leftItem->key.length) != 0)
+			if (memcmp(leftItem->key.data, rightItem->key.data, leftItem->key.size) != 0)
 				return false;
 
 			if (!Ezjson_Equals(&leftItem->value, &rightItem->value))
@@ -714,7 +714,7 @@ Ezjson_Value* Ezjson_Lookup(const Ezjson_Value* json, const Ezjson_String* key) 
 	for (size_t i = json->object.length; i > 0; --i) {
 		Ezjson_KeyValue* item = &json->object.items[i - 1];
 
-		if (item->key.length == key->length && memcmp(item->key.data, key->data, item->key.length) == 0)
+		if (item->key.size == key->size && memcmp(item->key.data, key->data, item->key.size) == 0)
 			return &item->value;
 	}
 

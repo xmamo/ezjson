@@ -26,38 +26,38 @@ extern "C" {
 #endif
 
 typedef enum Ezjson_Kind {
-	EZJSON_OBJECT,
-	EZJSON_ARRAY,
-	EZJSON_STRING,
-	EZJSON_NUMBER,
-	EZJSON_BOOLEAN,
 	EZJSON_NULL,
+	EZJSON_BOOLEAN,
+	EZJSON_NUMBER,
+	EZJSON_STRING,
+	EZJSON_ARRAY,
+	EZJSON_OBJECT,
 } Ezjson_Kind;
-
-typedef struct Ezjson_Object {
-	struct Ezjson_KeyValue* items;
-	size_t length;
-} Ezjson_Object;
-
-typedef struct Ezjson_Array {
-	struct Ezjson_Value* items;
-	size_t length;
-} Ezjson_Array;
 
 typedef struct Ezjson_String {
 	char* data;
 	size_t length;
 } Ezjson_String;
 
+typedef struct Ezjson_Array {
+	struct Ezjson_Value* items;
+	size_t length;
+} Ezjson_Array;
+
+typedef struct Ezjson_Object {
+	struct Ezjson_KeyValue* items;
+	size_t length;
+} Ezjson_Object;
+
 typedef struct Ezjson_Value {
 	Ezjson_Kind kind;
 
 	union {
-		Ezjson_Object object;
-		Ezjson_Array array;
-		Ezjson_String string;
-		double number;
 		bool boolean;
+		double number;
+		Ezjson_String string;
+		Ezjson_Array array;
+		Ezjson_Object object;
 	};
 } Ezjson_Value;
 

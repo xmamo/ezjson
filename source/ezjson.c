@@ -619,11 +619,20 @@ bool Ezjson_ReadFile(FILE* file, Ezjson_Value* json) {
 	assert(json != NULL);
 
 #if defined(__unix__)
+	bool r = false;
+	locale_t cLocale = newlocale(LC_ALL_MASK, "C", (locale_t)0);
+	if (cLocale == (locale_t)0) goto Cleanup0;
+	locale_t oldLocale = uselocale(cLocale);
+	if (oldLocale == (locale_t)0) goto Cleanup1;
 	flockfile(file);
 	int c = 0;
-	bool r = Ezjson_Read(file, json, &c);
+	r = Ezjson_Read(file, json, &c);
 	ungetc(c, file);
 	funlockfile(file);
+	uselocale(oldLocale);
+Cleanup1:
+	freelocale(cLocale);
+Cleanup0:
 	return r;
 #elif defined(_WIN32)
 	_locale_t cLocale = _wcreate_locale(LC_ALL, L"C");
@@ -648,10 +657,20 @@ bool Ezjson_ReadMemory(const void* memory, size_t size, Ezjson_Value* json) {
 	assert(json != NULL);
 
 #if defined(__unix__)
+	bool r = false;
 	FILE* file = fmemopen((void*)memory, size, "r");
-	if (file == NULL) return false;
-	bool r = Ezjson_Read(file, json, &(int){0});
+	if (file == NULL) goto Cleanup0;
+	locale_t cLocale = newlocale(LC_ALL_MASK, "C", (locale_t)0);
+	if (cLocale == (locale_t)0) goto Cleanup1;
+	locale_t oldLocale = uselocale(cLocale);
+	if (oldLocale == (locale_t)0) goto Cleanup2;
+	r = Ezjson_Read(file, json, &(int){0});
+	uselocale(oldLocale);
+Cleanup2:
+	freelocale(cLocale);
+Cleanup1:
 	fclose(file);
+Cleanup0:
 	return r;
 #elif defined(_WIN32)
 	_locale_t cLocale = _wcreate_locale(LC_ALL, L"C");

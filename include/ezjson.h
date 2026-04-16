@@ -9,7 +9,11 @@
 extern "C" {
 #endif
 
-#if defined(_WIN32) && defined(_MSC_VER) && defined(EZJSON_EXPORTS)
+#if defined(__unix__) && defined(__GNUC__) && defined(EZJSON_EXPORTS)
+#define EZJSON_API __attribute__((visibility("default")))
+#elif defined(__unix__) && defined(__GNUC__) && !defined(EZJSON_EXPORTS)
+#define EZJSON_API
+#elif defined(_WIN32) && defined(_MSC_VER) && defined(EZJSON_EXPORTS)
 #define EZJSON_API __declspec(dllexport)
 #elif defined(_WIN32) && defined(_MSC_VER) && !defined(EZJSON_EXPORTS)
 #define EZJSON_API __declspec(dllimport)
@@ -17,43 +21,35 @@ extern "C" {
 #define EZJSON_API __attribute__((dllexport))
 #elif defined(_WIN32) && defined(__GNUC__) && !defined(EZJSON_EXPORTS)
 #define EZJSON_API __attribute__((dllimport))
-#elif defined(__unix__) && defined(__GNUC__) && defined(EZJSON_EXPORTS)
-#define EZJSON_API __attribute__((visibility("default")))
 #else
 #define EZJSON_API
 #endif
 
 typedef enum Ezjson_Kind {
-	EZJSON_KIND_OBJECT,
-	EZJSON_KIND_ARRAY,
-	EZJSON_KIND_STRING,
-	EZJSON_KIND_NUMBER,
-	EZJSON_KIND_BOOL,
-	EZJSON_KIND_NULL,
+	EZJSON_OBJECT,
+	EZJSON_ARRAY,
+	EZJSON_STRING,
+	EZJSON_NUMBER,
+	EZJSON_BOOLEAN,
+	EZJSON_NULL,
 } Ezjson_Kind;
 
-typedef struct Ezjson_Object Ezjson_Object;
-typedef struct Ezjson_Array Ezjson_Array;
-typedef struct Ezjson_String Ezjson_String;
-typedef struct Ezjson_Value Ezjson_Value;
-typedef struct Ezjson_KeyValue Ezjson_KeyValue;
-
-struct Ezjson_Object {
-	Ezjson_KeyValue* items;
+typedef struct Ezjson_Object {
+	struct Ezjson_KeyValue* items;
 	size_t length;
-};
+} Ezjson_Object;
 
-struct Ezjson_Array {
-	Ezjson_Value* items;
+typedef struct Ezjson_Array {
+	struct Ezjson_Value* items;
 	size_t length;
-};
+} Ezjson_Array;
 
-struct Ezjson_String {
+typedef struct Ezjson_String {
 	char* data;
 	size_t length;
-};
+} Ezjson_String;
 
-struct Ezjson_Value {
+typedef struct Ezjson_Value {
 	Ezjson_Kind kind;
 
 	union {
@@ -63,12 +59,12 @@ struct Ezjson_Value {
 		double number;
 		bool boolean;
 	};
-};
+} Ezjson_Value;
 
-struct Ezjson_KeyValue {
+typedef struct Ezjson_KeyValue {
 	Ezjson_String key;
 	Ezjson_Value value;
-};
+} Ezjson_KeyValue;
 
 EZJSON_API bool Ezjson_ReadFile(FILE* file, Ezjson_Value* json);
 

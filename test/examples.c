@@ -165,7 +165,7 @@ int main(void) {
 	stream = NULL;
 	fopen_s(&stream, "example2.json", "r");
 #else
-	stream = fopen("example1.json", "r");
+	stream = fopen("example2.json", "r");
 #endif
 	actual = (Ezjson_Value){0};
 	assert(Ezjson_ReadFile(stream, &actual));

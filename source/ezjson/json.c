@@ -1,4 +1,4 @@
-#if defined(__unix__)
+#ifdef __unix__
 	#define _DEFAULT_SOURCE
 #endif
 
@@ -39,13 +39,11 @@
 	}
 
 	static int FileStreamGet(void* stream) {
-		assert(stream != NULL);
 		FileStream* fileStream = stream;
 		return fgetc(fileStream->file);
 	}
 
 	static int MemoryStreamGet(void* stream) {
-		assert(stream != NULL);
 		MemoryStream* memoryStream = stream;
 
 		if (memoryStream->size != 0) {
@@ -117,7 +115,7 @@ static bool GrowKeyValueVec(Ezjson_KeyValue** data, size_t* length, size_t* capa
 	return r;
 }
 
-static bool AppendCU(char** data, size_t* length, size_t* capacity, char32_t cu) {
+static bool AppendCu(char** data, size_t* length, size_t* capacity, char32_t cu) {
 	assert(data != NULL);
 	assert(length != NULL);
 	assert(capacity != NULL);
@@ -275,7 +273,7 @@ static bool ReadString(Stream* stream, Ezjson_String* string, int* c) {
 		}
 
 		if ((*c = StreamGet(stream)) != (unsigned char)'\\' || cu1 < 0xD800 || cu1 > 0xDBFF) {
-			if (!AppendCU(&string->data, &string->length, &capacity, cu1)) goto error;
+			if (!AppendCu(&string->data, &string->length, &capacity, cu1)) goto error;
 			goto top;
 		}
 
@@ -290,12 +288,12 @@ static bool ReadString(Stream* stream, Ezjson_String* string, int* c) {
 		}
 
 		if (cu2 < 0xDC00 || cu2 > 0xDFFF) {
-			if (!AppendCU(&string->data, &string->length, &capacity, cu2)) goto error;
+			if (!AppendCu(&string->data, &string->length, &capacity, cu2)) goto error;
 			continue;
 		}
 
 		char32_t cp = 0x10000 + (((cu1 & UINT32_C(0x3FF)) << 10) | (cu2 & UINT32_C(0x3FF)));
-		if (!AppendCU(&string->data, &string->length, &capacity, cp)) return false;
+		if (!AppendCu(&string->data, &string->length, &capacity, cp)) return false;
 	}
 
 	string->data[string->length - 1] = '\0';
@@ -595,13 +593,13 @@ static bool ReadValue(Stream* stream, Ezjson_Value* value, int* c) {
 static bool Ezjson_Read(Stream* stream, Ezjson_Value* json, int* c) {
 	assert(stream != NULL);
 	assert(json != NULL);
-	assert(c != NULL && *c == '\0');
+	assert(c != NULL && *c == 0);
 
 	*c = StreamGet(stream);
 
-	if (*c == (unsigned char)'\xEF') {  // Skip BOM
-		if ((*c = StreamGet(stream)) != (unsigned char)'\xBB') return false;
-		if ((*c = StreamGet(stream)) != (unsigned char)'\xBF') return false;
+	if (*c == 0xEF) {  // Skip BOM
+		if ((*c = StreamGet(stream)) != 0xBB) return false;
+		if ((*c = StreamGet(stream)) != 0xBF) return false;
 		*c = StreamGet(stream);
 	}
 
@@ -614,23 +612,21 @@ bool Ezjson_ReadFile(FILE* file, Ezjson_Value* json) {
 
 #if defined(__unix__)
 	flockfile(file);
-	int c = '\0';
+	int c = 0;
 	bool r = Ezjson_Read(file, json, &c);
 	ungetc(c, file);
 	funlockfile(file);
 	return r;
 #elif defined(_WIN32)
 	_lock_file(file);
-	FileStream stream = {{FileStreamGet}, file};
-	int c = '\0';
-	bool r = Ezjson_Read(&stream.super, json, &c);
+	int c = 0;
+	bool r = Ezjson_Read(&(FileStream){{FileStreamGet}, file}.super, json, &c);
 	ungetc(c, file);
 	_unlock_file(file);
 	return r;
 #else
-	FileStream stream = {{FileStreamGet}, file};
-	int c = '\0';
-	bool r = Ezjson_Read(&stream.super, json, &c);
+	int c = 0;
+	bool r = Ezjson_Read(&(FileStream){{FileStreamGet}, file}.super, json, &c);
 	ungetc(c, file);
 	return r;
 #endif
@@ -643,14 +639,13 @@ bool Ezjson_ReadMemory(const void* memory, size_t size, Ezjson_Value* json) {
 #if defined(__unix__)
 	FILE* file = fmemopen((void*)memory, size, "r");
 	if (file == NULL) return false;
-	int c = '\0';
+	int c = 0;
 	bool r = Ezjson_Read(file, json, &c);
 	fclose(file);
 	return r;
 #else
-	MemoryStream stream = {{MemoryStreamGet}, memory, size};
-	int c = '\0';
-	return Ezjson_Read(&stream.super, json, &c);
+	int c = 0;
+	return Ezjson_Read(&(MemoryStream){{MemoryStreamGet}, memory, size}.super, json, &c);
 #endif
 }
 

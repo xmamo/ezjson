@@ -7,7 +7,9 @@
 
 #include <ezjson/api.h>
 
-EZJSON_BEGIN_DECLS
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef enum Ezjson_Kind {
 	EZJSON_KIND_OBJECT,
@@ -66,6 +68,8 @@ EZJSON_API Ezjson_Value* Ezjson_Lookup(const Ezjson_Value* json, const Ezjson_St
 
 EZJSON_API void Ezjson_Destroy(Ezjson_Value* json);
 
-EZJSON_END_DECLS
+#ifdef __cplusplus
+}
+#endif
 
 #endif

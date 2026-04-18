@@ -29,12 +29,4 @@
 	#define EZJSON_API
 #endif
 
-#ifdef __cplusplus
-	#define EZJSON_BEGIN_DECLS extern "C" {
-	#define EZJSON_END_DECLS }
-#else
-	#define EZJSON_BEGIN_DECLS
-	#define EZJSON_END_DECLS
-#endif
-
 #endif

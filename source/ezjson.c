@@ -866,8 +866,8 @@ Cleanup0:
 }
 
 bool Ezjson_Equals(const Ezjson_Value* left, const Ezjson_Value* right) {
-	assert(left != NULL);
-	assert(right != NULL);
+	if (left == NULL || right == NULL)
+		return left == right;
 
 	if (left->kind != right->kind)
 		return false;
@@ -923,8 +923,8 @@ bool Ezjson_Equals(const Ezjson_Value* left, const Ezjson_Value* right) {
 }
 
 Ezjson_Value* Ezjson_Lookup(const Ezjson_Value* json, const Ezjson_String* key) {
-	assert(json != NULL);
-	assert(key != NULL);
+	if (json == NULL || key == NULL)
+		return NULL;
 
 	if (json->kind != EZJSON_OBJECT)
 		return NULL;
@@ -940,7 +940,7 @@ Ezjson_Value* Ezjson_Lookup(const Ezjson_Value* json, const Ezjson_String* key) 
 }
 
 void Ezjson_Destroy(Ezjson_Value* json) {
-	assert(json != NULL);
+	if (json != NULL) return;
 
 	if (json->kind == EZJSON_STRING) {
 		DestroyString(&json->string);

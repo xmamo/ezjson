@@ -553,7 +553,12 @@ static bool ReadArray(
 
 	*c = StreamGet(stream);
 	SkipWs(stream, c);
-	if (*c == (unsigned char)']') return true;
+
+	if (*c == (unsigned char)']') {
+		*c = StreamGet(stream);
+		SkipWs(stream, c);
+		return true;
+	}
 
 	size_t capacity = 0;
 
@@ -615,7 +620,12 @@ static bool ReadObject(
 
 	*c = StreamGet(stream);
 	SkipWs(stream, c);
-	if (*c == (unsigned char)'}') return true;
+
+	if (*c == (unsigned char)'}') {
+		*c = StreamGet(stream);
+		SkipWs(stream, c);
+		return true;
+	}
 
 	size_t capacity = 0;
 

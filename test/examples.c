@@ -151,21 +151,25 @@ static Ezjson_Value expected2 = {
 };
 
 int main(void) {
-#if (defined(__STDC_LIB_EXT1__) && defined(__STDC_WANT_LIB_EXT1__)) || (defined(__STDC_SECURE_LIB__) && defined(__STDC_WANT_SECURE_LIB__))
+#if defined(__STDC_LIB_EXT1__) || defined(__STDC_SECURE_LIB__)
 	FILE* stream = NULL;
-	fopen_s(&stream, "example1.json", "r");
+	errno_t error = fopen_s(&stream, "example1.json", "r");
+	assert(error == 0);
 #else
 	FILE* stream = fopen("example1.json", "r");
+	assert(stream != NULL);
 #endif
 	Ezjson_Value actual = {0};
 	assert(Ezjson_ReadFile(stream, &actual));
 	assert(Ezjson_Equals(&actual, &expected1));
 
-#if (defined(__STDC_LIB_EXT1__) && defined(__STDC_WANT_LIB_EXT1__)) || (defined(__STDC_SECURE_LIB__) && defined(__STDC_WANT_SECURE_LIB__))
+#if defined(__STDC_LIB_EXT1__) || defined(__STDC_SECURE_LIB__)
 	stream = NULL;
-	fopen_s(&stream, "example2.json", "r");
+	error = fopen_s(&stream, "example2.json", "r");
+	assert(error == 0);
 #else
 	stream = fopen("example2.json", "r");
+	assert(stream != NULL);
 #endif
 	actual = (Ezjson_Value){0};
 	assert(Ezjson_ReadFile(stream, &actual));

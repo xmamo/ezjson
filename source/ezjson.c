@@ -60,24 +60,48 @@ static int MemoryStreamGet(void* stream) {
 }
 #endif
 
-static bool GrowVec(void** data, size_t size, size_t* length, size_t* capacity, size_t delta) {
+static bool GrowVec(
+	void** data,
+	size_t size,
+	size_t* length,
+	size_t* capacity,
+	size_t delta,
+	Ezjson_Error* error
+) {
 	assert(data != NULL);
 	assert(length != NULL);
 	assert(capacity != NULL);
+	assert(error != NULL);
 
-	if (*length > SIZE_MAX - delta) return false;
+	if (*length > SIZE_MAX - delta) {
+		*error = EZJSON_MEMORY_ERROR;
+		return false;
+	}
+
 	size_t newLength = *length + delta;
 	size_t newCapacity = *capacity;
+	void* newData = *data;
 
 	while (newLength > newCapacity) {
-		if (newCapacity > SIZE_MAX / 2) return false;
+		if (newCapacity > SIZE_MAX / 2) {
+			*error = EZJSON_MEMORY_ERROR;
+			return false;
+		}
+
 		newCapacity = newCapacity != 0 ? 2 * newCapacity : 1;
 	}
 
 	if (newCapacity > *capacity) {
-		if (newCapacity > SIZE_MAX / size) return false;
-		void* newData = realloc(*data, size * newCapacity);
-		if (newData == NULL) return false;
+		if (newCapacity > SIZE_MAX / size) {
+			*error = EZJSON_MEMORY_ERROR;
+			return false;
+		}
+
+		if ((newData = realloc(*data, size * newCapacity)) == NULL) {
+			*error = EZJSON_MEMORY_ERROR;
+			return false;
+		}
+
 		*data = newData;
 		*capacity = newCapacity;
 	}
@@ -86,60 +110,87 @@ static bool GrowVec(void** data, size_t size, size_t* length, size_t* capacity, 
 	return true;
 }
 
-static bool GrowCharVec(char** data, size_t* size, size_t* capacity, size_t delta) {
+static bool GrowCharVec(
+	char** data,
+	size_t* size,
+	size_t* capacity,
+	size_t delta,
+	Ezjson_Error* error
+) {
 	assert(data != NULL);
 	assert(size != NULL);
 	assert(capacity != NULL);
+	assert(error != NULL);
 
 	void* p = *data;
-	bool r = GrowVec(&p, sizeof(char), size, capacity, delta);
+	bool ok = GrowVec(&p, sizeof(char), size, capacity, delta, error);
 	*data = p;
-	return r;
+	return ok;
 }
 
-static bool GrowValueVec(Ezjson_Value** data, size_t* length, size_t* capacity, size_t delta) {
+static bool GrowValueVec(
+	Ezjson_Value** data,
+	size_t* length,
+	size_t* capacity,
+	size_t delta,
+	Ezjson_Error* error
+) {
 	assert(data != NULL);
 	assert(length != NULL);
 	assert(capacity != NULL);
+	assert(error != NULL);
 
 	void* p = *data;
-	bool r = GrowVec(&p, sizeof(Ezjson_Value), length, capacity, delta);
+	bool ok = GrowVec(&p, sizeof(Ezjson_Value), length, capacity, delta, error);
 	*data = p;
-	return r;
+	return ok;
 }
 
-static bool GrowKeyValueVec(Ezjson_KeyValue** data, size_t* length, size_t* capacity, size_t delta) {
+static bool GrowKeyValueVec(
+	Ezjson_KeyValue** data,
+	size_t* length,
+	size_t* capacity,
+	size_t delta,
+	Ezjson_Error* error
+) {
 	assert(data != NULL);
 	assert(length != NULL);
 	assert(capacity != NULL);
+	assert(error != NULL);
 
 	void* p = *data;
-	bool r = GrowVec(&p, sizeof(Ezjson_KeyValue), length, capacity, delta);
+	bool ok = GrowVec(&p, sizeof(Ezjson_KeyValue), length, capacity, delta, error);
 	*data = p;
-	return r;
+	return ok;
 }
 
-static bool AppendCu(char** data, size_t* size, size_t* capacity, char32_t cu) {
+static bool AppendCu(
+	char** data,
+	size_t* size,
+	size_t* capacity,
+	char32_t cu,
+	Ezjson_Error* error
+) {
 	assert(data != NULL);
 	assert(size != NULL);
 	assert(capacity != NULL);
-	assert(cu <= 0x10FFFF);
+	assert(cu <= 0x1FFFFF);
 
 	if (cu <= 0x7F) {
-		if (!GrowCharVec(data, size, capacity, 1)) return false;
+		if (!GrowCharVec(data, size, capacity, 1, error)) return false;
 		(*data)[*size - 2] = 0x00 | ((cu >> 0) & 0x7F);
 		return true;
 	}
 
 	if (cu <= 0x7FF) {
-		if (!GrowCharVec(data, size, capacity, 2)) return false;
+		if (!GrowCharVec(data, size, capacity, 2, error)) return false;
 		(*data)[*size - 3] = 0xC0 | ((cu >> 6) & 0xFF);
 		(*data)[*size - 2] = 0x80 | ((cu >> 0) & 0x3F);
 		return true;
 	}
 
 	if (cu <= 0xFFFF) {
-		if (!GrowCharVec(data, size, capacity, 3)) return false;
+		if (!GrowCharVec(data, size, capacity, 3, error)) return false;
 		(*data)[*size - 4] = 0xE0 | ((cu >> 12) & 0x0F);
 		(*data)[*size - 3] = 0x80 | ((cu >> 6) & 0x3F);
 		(*data)[*size - 2] = 0x80 | ((cu >> 0) & 0x3F);
@@ -147,7 +198,7 @@ static bool AppendCu(char** data, size_t* size, size_t* capacity, char32_t cu) {
 	}
 
 	if (cu <= 0x1FFFFF) {
-		if (!GrowCharVec(data, size, capacity, 4)) return false;
+		if (!GrowCharVec(data, size, capacity, 4, error)) return false;
 		(*data)[*size - 5] = 0xF0 | ((cu >> 18) & 0x07);
 		(*data)[*size - 4] = 0x80 | ((cu >> 12) & 0x3F);
 		(*data)[*size - 3] = 0x80 | ((cu >> 6) & 0x3F);
@@ -196,25 +247,26 @@ static void SkipWs(Stream* stream, int* c) {
 	}
 }
 
-static bool ReadNumeral(Stream* stream, char** numeral, int* c) {
+static bool ReadNumeral(Stream* stream, char** numeral, int* c, Ezjson_Error* error) {
 	assert(stream != NULL);
 	assert(numeral != NULL && *numeral == NULL);
 	assert(c != NULL && *c != EOF && strchr("0123456789-", *c) != NULL);
+	assert(error != NULL);
 
-	*numeral = malloc(sizeof(char) * 2);
-	if (*numeral == NULL) return false;
+	size_t size = 0;
+	size_t capacity = 0;
+	if (!GrowCharVec(numeral, &size, &capacity, 2, error)) return error;
 	(*numeral)[0] = (char)*c;
-	size_t size = 2;
-	size_t capacity = 2;
 
 	// Data is now: [0-9-]
 
 	if (*c == (unsigned char)'-') {
-		*c = StreamGet(stream);
-		if (*c == EOF) goto Error;
-		if (strchr("0123456789", *c) == NULL) goto Error;
+		if ((*c = StreamGet(stream)) == EOF || strchr("0123456789", *c) == NULL) {
+			*error = EZJSON_SYNTAX_ERROR;
+			goto Error;
+		}
 
-		if (!GrowCharVec(numeral, &size, &capacity, 1)) goto Error;
+		if (!GrowCharVec(numeral, &size, &capacity, 1, error)) goto Error;
 		(*numeral)[size - 2] = (char)*c;
 	}
 
@@ -222,84 +274,79 @@ static bool ReadNumeral(Stream* stream, char** numeral, int* c) {
 
 	if (*c != (unsigned char)'0') {
 		do {
-			*c = StreamGet(stream);
-
-			if (*c == EOF || strchr("0123456789.eE", *c) == NULL) {
+			if ((*c = StreamGet(stream)) == EOF || strchr("0123456789.eE", *c) == NULL) {
 				// Data is now: -?[1-9][0-9]*
 				goto Success;
 			}
 
-			if (!GrowCharVec(numeral, &size, &capacity, 1)) goto Error;
+			if (!GrowCharVec(numeral, &size, &capacity, 1, error)) goto Error;
 			(*numeral)[size - 2] = (char)*c;
 		} while (strchr(".eE", *c) == NULL);
 	} else {
-		*c = StreamGet(stream);
-
-		if (*c == EOF || strchr(".eE", *c) == NULL) {
+		if ((*c = StreamGet(stream)) == EOF || strchr(".eE", *c) == NULL) {
 			// Data is now: -?0
 			goto Success;
 		}
 
-		if (!GrowCharVec(numeral, &size, &capacity, 1)) goto Error;
+		if (!GrowCharVec(numeral, &size, &capacity, 1, error)) goto Error;
 		(*numeral)[size - 2] = (char)*c;
 	}
 
 	// Data is now: -?([1-9][0-9]*|0)[.eE]
 
 	if (*c == (unsigned char)'.') {
-		*c = StreamGet(stream);
-		if (*c == EOF) goto Error;
-		if (strchr("0123456789", *c) == NULL) goto Error;
+		if ((*c = StreamGet(stream)) == EOF || strchr("0123456789", *c) == NULL) {
+			*error = EZJSON_SYNTAX_ERROR;
+			goto Error;
+		}
 
-		if (!GrowCharVec(numeral, &size, &capacity, 1)) goto Error;
+		if (!GrowCharVec(numeral, &size, &capacity, 1, error)) goto Error;
 		(*numeral)[size - 2] = (char)*c;
 
 		do {
-			*c = StreamGet(stream);
-
-			if (*c == EOF || strchr("0123456789eE", *c) == NULL) {
+			if ((*c = StreamGet(stream)) == EOF || strchr("0123456789eE", *c) == NULL) {
 				// Data is now: -?([1-9][0-9]*|0)\.[0-9]+
 				goto Success;
 			}
 
-			if (!GrowCharVec(numeral, &size, &capacity, 1)) goto Error;
+			if (!GrowCharVec(numeral, &size, &capacity, 1, error)) goto Error;
 			(*numeral)[size - 2] = (char)*c;
 		} while (strchr("eE", *c) == NULL);
 	}
 
 	// Data is now: -?(0|[1-9][0-9]*)(\.[0-9]+)?[eE]
 
-	*c = StreamGet(stream);
-	if (*c == EOF) goto Error;
-	if (strchr("0123456789+-", *c) == NULL) goto Error;
+	if ((*c = StreamGet(stream)) == EOF || strchr("0123456789+-", *c) == NULL) {
+		*error = EZJSON_SYNTAX_ERROR;
+		goto Error;
+	}
 
-	if (!GrowCharVec(numeral, &size, &capacity, 1)) goto Error;
+	if (!GrowCharVec(numeral, &size, &capacity, 1, error)) goto Error;
 	(*numeral)[size - 2] = (char)*c;
 
 	// Data is now: -?(0|[1-9][0-9]*)(\.[0-9]+)?[eE][0-9+-]
 
 	if (strchr("+-", *c) != NULL) {
-		*c = StreamGet(stream);
-		if (*c == EOF) goto Error;
-		if (strchr("0123456789", *c) == NULL) goto Error;
+		if ((*c = StreamGet(stream)) == EOF || strchr("0123456789", *c) == NULL) {
+			*error = EZJSON_SYNTAX_ERROR;
+			goto Error;
+		}
 
-		if (!GrowCharVec(numeral, &size, &capacity, 1)) goto Error;
+		if (!GrowCharVec(numeral, &size, &capacity, 1, error)) goto Error;
 		(*numeral)[size - 2] = (char)*c;
 	}
 
 	// Data is now: -?(0|[1-9][0-9]*)(\.[0-9]+)?[eE][+-]?[0-9]
 
-	do {
-		*c = StreamGet(stream);
-
-		if (*c == EOF || strchr("0123456789", *c) == NULL) {
+	while (true) {
+		if ((*c = StreamGet(stream)) == EOF || strchr("0123456789", *c) == NULL) {
 			// Data is now: -?(0|[1-9][0-9]*)(\.[0-9]+)?[eE][+-]?[0-9]+
 			goto Success;
 		}
 
-		if (!GrowCharVec(numeral, &size, &capacity, 1)) goto Error;
+		if (!GrowCharVec(numeral, &size, &capacity, 1, error)) goto Error;
 		(*numeral)[size - 2] = (char)*c;
-	} while (true);
+	}
 
 Success:
 	(*numeral)[size - 1] = '\0';
@@ -315,11 +362,12 @@ Error:
 	return false;
 }
 
-static bool ReadEscape(Stream* stream, char* v, char16_t* cu, int* c) {
+static bool ReadEscape(Stream* stream, char* v, char16_t* cu, int* c, Ezjson_Error* error) {
 	assert(stream != NULL);
 	assert(v != NULL && *v == '\0');
 	assert(cu != NULL && *cu == 0);
 	assert(c != NULL && *c == (unsigned char)'\\');
+	assert(error != NULL);
 
 	static const char escapeKey[] =
 		"\"\\/bfnrt";
@@ -338,7 +386,11 @@ static bool ReadEscape(Stream* stream, char* v, char16_t* cu, int* c) {
 		0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
 	};
 
-	if ((*c = StreamGet(stream)) == EOF) return false;
+	if ((*c = StreamGet(stream)) == EOF) {
+		*error = EZJSON_SYNTAX_ERROR;
+		return false;
+	}
+
 	const char* p = strchr(escapeKey, *c);
 
 	if (p != NULL) {
@@ -346,79 +398,84 @@ static bool ReadEscape(Stream* stream, char* v, char16_t* cu, int* c) {
 		return true;
 	}
 
-	if (*c != (unsigned char)'u')
+	if (*c != (unsigned char)'u') {
+		*error = EZJSON_SYNTAX_ERROR;
 		return false;
+	}
 
 	for (int i = 0; i < 4; ++i) {
-		if ((*c = StreamGet(stream)) == EOF) return false;
-		p = strchr(hexKey, *c);
-		if (p == NULL) return false;
+		if ((*c = StreamGet(stream)) == EOF || (p = strchr(hexKey, *c)) == NULL) {
+			*error = EZJSON_SYNTAX_ERROR;
+			return false;
+		}
+
 		*cu = (*cu << 4) | hexValue[p - hexKey];
 	}
 
 	return true;
 }
 
-static bool ReadString(Stream* stream, Ezjson_String* string, int* c) {
+static bool ReadString(Stream* stream, Ezjson_String* string, int* c, Ezjson_Error* error) {
 	assert(stream != NULL);
 	assert(string != NULL && string->data == NULL && string->size == 0);
 	assert(c != NULL && *c == (unsigned char)'"');
+	assert(error != NULL);
 
-	string->data = malloc(sizeof(char));
-	if (string->data == NULL) return false;
-	string->size = 1;
-	size_t capacity = 1;
+	size_t capacity = 0;
+	if (!GrowCharVec(&string->data, &string->size, &capacity, 1, error)) return error;
 
 	while (true) {
 		*c = StreamGet(stream);
 
 	Top:
-		if (*c == EOF || *c <= 0x1F)
+		if (*c == EOF || *c <= 0x1F) {
+			*error = EZJSON_SYNTAX_ERROR;
 			goto Error;
+		}
 
 		if (*c == (unsigned char)'"')
 			break;
 
 		if (*c != (unsigned char)'\\') {
-			if (!GrowCharVec(&string->data, &string->size, &capacity, 1)) goto Error;
+			if (!GrowCharVec(&string->data, &string->size, &capacity, 1, error)) goto Error;
 			string->data[string->size - 2] = (char)*c;
 			continue;
 		}
 
 		char v1 = '\0';
 		char16_t cu1 = 0;
-		if (!ReadEscape(stream, &v1, &cu1, c)) goto Error;
+		if (!ReadEscape(stream, &v1, &cu1, c, error)) goto Error;
 
 		if (cu1 == 0) {
-			if (!GrowCharVec(&string->data, &string->size, &capacity, 1)) goto Error;
+			if (!GrowCharVec(&string->data, &string->size, &capacity, 1, error)) goto Error;
 			string->data[string->size - 2] = v1;
 			continue;
 		}
 
 		if ((*c = StreamGet(stream)) != (unsigned char)'\\' || cu1 < 0xD800 || cu1 > 0xDBFF) {
-			if (!AppendCu(&string->data, &string->size, &capacity, cu1)) goto Error;
+			if (!AppendCu(&string->data, &string->size, &capacity, cu1, error)) goto Error;
 			goto Top;
 		}
 
 		char v2 = '\0';
 		char16_t cu2 = 0;
-		if (!ReadEscape(stream, &v2, &cu2, c)) return false;
+		if (!ReadEscape(stream, &v2, &cu2, c, error)) goto Error;
 
 		if (cu2 == 0) {
-			if (!AppendCu(&string->data, &string->size, &capacity, cu1)) goto Error;
-			if (!GrowCharVec(&string->data, &string->size, &capacity, 1)) goto Error;
+			if (!AppendCu(&string->data, &string->size, &capacity, cu1, error)) goto Error;
+			if (!GrowCharVec(&string->data, &string->size, &capacity, 1, error)) goto Error;
 			string->data[string->size - 2] = v2;
 			continue;
 		}
 
 		if (cu2 < 0xDC00 || cu2 > 0xDFFF) {
-			if (!AppendCu(&string->data, &string->size, &capacity, cu1)) goto Error;
-			if (!AppendCu(&string->data, &string->size, &capacity, cu2)) goto Error;
+			if (!AppendCu(&string->data, &string->size, &capacity, cu1, error)) goto Error;
+			if (!AppendCu(&string->data, &string->size, &capacity, cu2, error)) goto Error;
 			continue;
 		}
 
 		char32_t cp = 0x10000 + (((cu1 & UINT32_C(0x3FF)) << 10) | (cu2 & UINT32_C(0x3FF)));
-		if (!AppendCu(&string->data, &string->size, &capacity, cp)) return false;
+		if (!AppendCu(&string->data, &string->size, &capacity, cp, error)) goto Error;
 	}
 
 	string->data[string->size - 1] = '\0';
@@ -435,12 +492,13 @@ Error:
 	return false;
 }
 
-static bool ReadValue(Stream* stream, Ezjson_Value* value, int* c);
+static bool ReadValue(Stream* stream, Ezjson_Value* value, int* c, Ezjson_Error* error);
 
-static bool ReadArray(Stream* stream, Ezjson_Array* array, int* c) {
+static bool ReadArray(Stream* stream, Ezjson_Array* array, int* c, Ezjson_Error* error) {
 	assert(stream != NULL);
 	assert(array != NULL && array->items == NULL && array->length == 0);
 	assert(c != NULL && *c == '[');
+	assert(error != NULL);
 
 	*c = StreamGet(stream);
 	SkipWs(stream, c);
@@ -450,14 +508,24 @@ static bool ReadArray(Stream* stream, Ezjson_Array* array, int* c) {
 
 	while (true) {
 		Ezjson_Value item = {0};
-		if (!ReadValue(stream, &item, c)) goto Error;
-		if (*c == EOF) goto Error;
+		if (!ReadValue(stream, &item, c, error)) goto Error;
 
-		if (!GrowValueVec(&array->items, &array->length, &capacity, 1)) goto Error;
+		if (*c == EOF) {
+			*error = EZJSON_SYNTAX_ERROR;
+			goto Error;
+		}
+
+		if (!GrowValueVec(&array->items, &array->length, &capacity, 1, error)) goto Error;
 		array->items[array->length - 1] = item;
 
-		if (*c == (unsigned char)']') break;
-		if (*c != (unsigned char)',') goto Error;
+		if (*c == (unsigned char)']')
+			break;
+
+		if (*c != (unsigned char)',') {
+			*error = EZJSON_SYNTAX_ERROR;
+			goto Error;
+		}
+
 		*c = StreamGet(stream);
 	}
 
@@ -477,10 +545,11 @@ Error:
 	return false;
 }
 
-static bool ReadObject(Stream* stream, Ezjson_Object* object, int* c) {
+static bool ReadObject(Stream* stream, Ezjson_Object* object, int* c, Ezjson_Error* error) {
 	assert(stream != NULL);
 	assert(object != NULL && object->items == NULL && object->length == 0);
 	assert(c != NULL && *c == (unsigned char)'{');
+	assert(error != NULL);
 
 	*c = StreamGet(stream);
 	SkipWs(stream, c);
@@ -489,19 +558,33 @@ static bool ReadObject(Stream* stream, Ezjson_Object* object, int* c) {
 	size_t capacity = 0;
 
 	while (true) {
-		if (*c != (unsigned char)'"') goto Error;
+		if (*c != (unsigned char)'"') {
+			*error = EZJSON_SYNTAX_ERROR;
+			goto Error;
+		}
 
-		if (!GrowKeyValueVec(&object->items, &object->length, &capacity, 1)) goto Error;
+		if (!GrowKeyValueVec(&object->items, &object->length, &capacity, 1, error)) goto Error;
 		object->items[object->length - 1] = (Ezjson_KeyValue){0};
 
-		if (!ReadString(stream, &object->items[object->length - 1].key, c)) goto Error;
-		if (*c != (unsigned char)':') goto Error;
+		if (!ReadString(stream, &object->items[object->length - 1].key, c, error))
+			goto Error;
+
+		if (*c != (unsigned char)':') {
+			*error = EZJSON_SYNTAX_ERROR;
+			goto Error;
+		}
 
 		*c = StreamGet(stream);
-		if (!ReadValue(stream, &object->items[object->length - 1].value, c)) goto Error;
+		if (!ReadValue(stream, &object->items[object->length - 1].value, c, error)) goto Error;
 
-		if (*c == (unsigned char)'}') break;
-		if (*c != (unsigned char)',') goto Error;
+		if (*c == (unsigned char)'}')
+			break;
+
+		if (*c != (unsigned char)',') {
+			*error = EZJSON_SYNTAX_ERROR;
+			goto Error;
+		}
+
 		*c = StreamGet(stream);
 		SkipWs(stream, c);
 	}
@@ -521,19 +604,31 @@ Error:
 	return false;
 }
 
-static bool ReadValue(Stream* stream, Ezjson_Value* value, int* c) {
+static bool ReadValue(Stream* stream, Ezjson_Value* value, int* c, Ezjson_Error* error) {
 	assert(stream != NULL);
 	assert(value != NULL);
 	assert(c != NULL && (*c == EOF || (*c >= 0 && *c <= UCHAR_MAX)));
+	assert(error != NULL);
 
 	SkipWs(stream, c);
 
 	if (*c == (unsigned char)'n') {
 		value->kind = EZJSON_NULL;
 
-		if ((*c = StreamGet(stream)) != (unsigned char)'u') return false;
-		if ((*c = StreamGet(stream)) != (unsigned char)'l') return false;
-		if ((*c = StreamGet(stream)) != (unsigned char)'l') return false;
+		if ((*c = StreamGet(stream)) != (unsigned char)'u') {
+			*error = EZJSON_SYNTAX_ERROR;
+			return false;
+		}
+
+		if ((*c = StreamGet(stream)) != (unsigned char)'l') {
+			*error = EZJSON_SYNTAX_ERROR;
+			return false;
+		}
+
+		if ((*c = StreamGet(stream)) != (unsigned char)'l') {
+			*error = EZJSON_SYNTAX_ERROR;
+			return false;
+		}
 
 		*c = StreamGet(stream);
 		SkipWs(stream, c);
@@ -543,10 +638,25 @@ static bool ReadValue(Stream* stream, Ezjson_Value* value, int* c) {
 	if (*c == (unsigned char)'f') {
 		*value = (Ezjson_Value){EZJSON_BOOLEAN, .boolean = false};
 
-		if ((*c = StreamGet(stream)) != (unsigned char)'a') return false;
-		if ((*c = StreamGet(stream)) != (unsigned char)'l') return false;
-		if ((*c = StreamGet(stream)) != (unsigned char)'s') return false;
-		if ((*c = StreamGet(stream)) != (unsigned char)'e') return false;
+		if ((*c = StreamGet(stream)) != (unsigned char)'a') {
+			*error = EZJSON_SYNTAX_ERROR;
+			return false;
+		}
+
+		if ((*c = StreamGet(stream)) != (unsigned char)'l') {
+			*error = EZJSON_SYNTAX_ERROR;
+			return false;
+		}
+
+		if ((*c = StreamGet(stream)) != (unsigned char)'s') {
+			*error = EZJSON_SYNTAX_ERROR;
+			return false;
+		}
+
+		if ((*c = StreamGet(stream)) != (unsigned char)'e') {
+			*error = EZJSON_SYNTAX_ERROR;
+			return false;
+		}
 
 		*c = StreamGet(stream);
 		SkipWs(stream, c);
@@ -556,9 +666,20 @@ static bool ReadValue(Stream* stream, Ezjson_Value* value, int* c) {
 	if (*c == (unsigned char)'t') {
 		*value = (Ezjson_Value){EZJSON_BOOLEAN, .boolean = true};
 
-		if ((*c = StreamGet(stream)) != (unsigned char)'r') return false;
-		if ((*c = StreamGet(stream)) != (unsigned char)'u') return false;
-		if ((*c = StreamGet(stream)) != (unsigned char)'e') return false;
+		if ((*c = StreamGet(stream)) != (unsigned char)'r') {
+			*error = EZJSON_SYNTAX_ERROR;
+			return false;
+		}
+
+		if ((*c = StreamGet(stream)) != (unsigned char)'u') {
+			*error = EZJSON_SYNTAX_ERROR;
+			return false;
+		}
+
+		if ((*c = StreamGet(stream)) != (unsigned char)'e') {
+			*error = EZJSON_SYNTAX_ERROR;
+			return false;
+		}
 
 		*c = StreamGet(stream);
 		SkipWs(stream, c);
@@ -569,7 +690,7 @@ static bool ReadValue(Stream* stream, Ezjson_Value* value, int* c) {
 		*value = (Ezjson_Value){EZJSON_NUMBER, .number = 0.0};
 
 		char* numeral = NULL;
-		if (!ReadNumeral(stream, &numeral, c)) return false;
+		if (!ReadNumeral(stream, &numeral, c, error)) return false;
 
 		char* end = numeral;
 #ifdef _WIN32
@@ -577,111 +698,170 @@ static bool ReadValue(Stream* stream, Ezjson_Value* value, int* c) {
 #else
 		value->number = strtod(numeral, &end);
 #endif
-		bool ok = *end == '\0';
+		bool ok = end > numeral && *end == '\0';
 		free(numeral);
-		return ok;
+
+		if (ok) {
+			return true;
+		} else {
+			*error = EZJSON_SYNTAX_ERROR;
+			return false;
+		}
 	}
 
 	if (*c == (unsigned char)'"') {
 		*value = (Ezjson_Value){EZJSON_STRING, .string = (Ezjson_String){0}};
-		return ReadString(stream, &value->string, c);
+		return ReadString(stream, &value->string, c, error);
 	}
 
 	if (*c == (unsigned char)'[') {
 		*value = (Ezjson_Value){EZJSON_ARRAY, .array = (Ezjson_Array){0}};
-		return ReadArray(stream, &value->array, c);
+		return ReadArray(stream, &value->array, c, error);
 	}
 
 	if (*c == (unsigned char)'{') {
 		*value = (Ezjson_Value){EZJSON_OBJECT, .object = (Ezjson_Object){0}};
-		return ReadObject(stream, &value->object, c);
+		return ReadObject(stream, &value->object, c, error);
 	}
 
+	*error = EZJSON_SYNTAX_ERROR;
 	return false;
 }
 
-static bool Ezjson_Read(Stream* stream, Ezjson_Value* json, int* c) {
+static bool Ezjson_Read(Stream* stream, Ezjson_Value* json, int* c, Ezjson_Error* error) {
 	assert(stream != NULL);
 	assert(json != NULL);
 	assert(c != NULL && *c == 0);
+	assert(error != NULL);
 
-	*c = StreamGet(stream);
-
-	if (*c == 0xEF) {  // Skip BOM
+	if ((*c = StreamGet(stream)) == 0xEF) {  // Skip BOM
 		if ((*c = StreamGet(stream)) != 0xBB) return false;
 		if ((*c = StreamGet(stream)) != 0xBF) return false;
 		*c = StreamGet(stream);
 	}
 
-	return ReadValue(stream, json, c);
+	return ReadValue(stream, json, c, error);
 }
 
-bool Ezjson_ReadFile(FILE* file, Ezjson_Value* json) {
-	assert(file != NULL);
-	assert(json != NULL);
+bool Ezjson_ReadFile(FILE* file, Ezjson_Value* json, Ezjson_Error* error) {
+	if (error == NULL)
+		return Ezjson_ReadFile(file, json, &(Ezjson_Error){EZJSON_SUCCESS});
+
+	if (file == NULL || json == NULL) {
+		*error = EZJSON_ARGUMENT_ERROR;
+		return false;
+	}
 
 #if defined(__unix__)
-	bool r = false;
-	locale_t cLocale = newlocale(LC_ALL_MASK, "C", (locale_t)0);
-	if (cLocale == (locale_t)0) goto Cleanup0;
-	locale_t oldLocale = uselocale(cLocale);
-	if (oldLocale == (locale_t)0) goto Cleanup1;
+	bool ok = false;
+	locale_t cLocale = (locale_t)0;
+	locale_t oldLocale = (locale_t)0;
+
+	if ((cLocale = newlocale(LC_ALL_MASK, "C", (locale_t)0)) == (locale_t)0) {
+		*error = EZJSON_LOCALE_ERROR;
+		goto Cleanup0;
+	}
+
+	if ((oldLocale = uselocale(cLocale)) == (locale_t)0) {
+		*error = EZJSON_LOCALE_ERROR;
+		goto Cleanup1;
+	}
+
 	flockfile(file);
 	int c = 0;
-	r = Ezjson_Read(file, json, &c);
+	ok = Ezjson_Read(file, json, &c, error);
 	ungetc(c, file);
 	funlockfile(file);
+
 	uselocale(oldLocale);
 Cleanup1:
 	freelocale(cLocale);
 Cleanup0:
-	return r;
+	return ok;
 #elif defined(_WIN32)
-	_locale_t cLocale = _wcreate_locale(LC_ALL, L"C");
-	if (cLocale == NULL) return false;
+	_locale_t cLocale = NULL;
+
+	if ((cLocale = _wcreate_locale(LC_ALL, L"C")) == NULL) {
+		*error = EZJSON_LOCALE_ERROR;
+		return false;
+	}
+
 	_lock_file(file);
 	int c = 0;
-	bool r = Ezjson_Read(&(FileStream){{FileStreamGet, cLocale}, file}.super, json, &c);
+	FileStream fileStream = {{FileStreamGet, cLocale}, file};
+	bool ok = Ezjson_Read(&fileStream.super, json, &c, error);
 	ungetc(c, file);
 	_unlock_file(file);
+
 	_free_locale(cLocale);
-	return r;
+	return ok;
 #else
 	int c = 0;
-	bool r = Ezjson_Read(&(FileStream){{FileStreamGet}, file}.super, json, &c);
+	FileStream fileStream = {{FileStreamGet}, file};
+	bool ok = Ezjson_Read(&fileStream.super, json, &c, error);
 	ungetc(c, file);
-	return r;
+	return ok;
 #endif
 }
 
-bool Ezjson_ReadMemory(const void* memory, size_t size, Ezjson_Value* json) {
-	assert(memory != NULL || size == 0);
-	assert(json != NULL);
+bool Ezjson_ReadMemory(const void* memory, size_t size, Ezjson_Value* json, Ezjson_Error* error) {
+	if (error == NULL)
+		return Ezjson_ReadMemory(memory, size, json, &(Ezjson_Error){EZJSON_SUCCESS});
+
+	if ((memory == NULL && size != 0) || json == NULL) {
+		*error = EZJSON_ARGUMENT_ERROR;
+		return false;
+	}
 
 #if defined(__unix__)
-	bool r = false;
-	FILE* file = fmemopen((void*)memory, size, "r");
-	if (file == NULL) goto Cleanup0;
-	locale_t cLocale = newlocale(LC_ALL_MASK, "C", (locale_t)0);
-	if (cLocale == (locale_t)0) goto Cleanup1;
-	locale_t oldLocale = uselocale(cLocale);
-	if (oldLocale == (locale_t)0) goto Cleanup2;
-	r = Ezjson_Read(file, json, &(int){0});
+	bool ok = false;
+	FILE* file = NULL;
+	locale_t cLocale = (locale_t)0;
+	locale_t oldLocale = (locale_t)0;
+
+	if ((file = fmemopen((void*)memory, size, "r")) == NULL) {
+		*error = EZJSON_MEMORY_ERROR;
+		goto Cleanup0;
+	}
+
+	if ((cLocale = newlocale(LC_ALL_MASK, "C", (locale_t)0)) == (locale_t)0) {
+		*error = EZJSON_LOCALE_ERROR;
+		goto Cleanup1;
+	}
+
+	if ((oldLocale = uselocale(cLocale)) == (locale_t)0) {
+		*error = EZJSON_LOCALE_ERROR;
+		goto Cleanup1;
+	}
+
+	int c = 0;
+	ok = Ezjson_Read(file, json, &c, error);
+
 	uselocale(oldLocale);
 Cleanup2:
 	freelocale(cLocale);
 Cleanup1:
 	fclose(file);
 Cleanup0:
-	return r;
+	return ok;
 #elif defined(_WIN32)
-	_locale_t cLocale = _wcreate_locale(LC_ALL, L"C");
-	if (cLocale == NULL) return false;
-	bool r = Ezjson_Read(&(MemoryStream){{MemoryStreamGet, cLocale}, memory, size}.super, json, &(int){0});
+	_locale_t cLocale = NULL;
+
+	if ((cLocale =_wcreate_locale(LC_ALL, L"C")) == NULL) {
+		*error = EZJSON_LOCALE_ERROR;
+		return false;
+	}
+
+	MemoryStream memoryStream = {{MemoryStreamGet, cLocale}, memory, size};
+	int c = 0;
+	bool ok = Ezjson_Read(&memoryStream.super, json, &c, error);
+
 	_free_locale(cLocale);
-	return r;
+	return ok;
 #else
-	return Ezjson_Read(&(MemoryStream){{MemoryStreamGet}, memory, size}.super, json, &(int){0});
+	MemoryStream memoryStream = {{MemoryStreamGet}, memory, size};
+	int c = 0;
+	return Ezjson_Read(&memoryStream.super, json, &c, error);
 #endif
 }
 
@@ -748,7 +928,7 @@ Ezjson_Value* Ezjson_Lookup(const Ezjson_Value* json, const Ezjson_String* key) 
 
 	if (json->kind != EZJSON_OBJECT)
 		return NULL;
-	
+
 	for (size_t i = json->object.length; i > 0; --i) {
 		Ezjson_KeyValue* item = &json->object.items[i - 1];
 

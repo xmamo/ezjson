@@ -2,6 +2,7 @@
 #define __STDC_WANT_LIB_EXT1__
 #include <assert.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -160,7 +161,7 @@ int main(void) {
 	assert(stream != NULL);
 #endif
 	Ezjson_Value actual = {0};
-	assert(Ezjson_ReadFile(stream, &actual));
+	assert(Ezjson_ReadFile(stream, &actual, NULL));
 	assert(Ezjson_Equals(&actual, &expected1));
 
 #if defined(__STDC_LIB_EXT1__) || defined(__STDC_SECURE_LIB__)
@@ -172,7 +173,7 @@ int main(void) {
 	assert(stream != NULL);
 #endif
 	actual = (Ezjson_Value){0};
-	assert(Ezjson_ReadFile(stream, &actual));
+	assert(Ezjson_ReadFile(stream, &actual, NULL));
 	assert(Ezjson_Equals(&actual, &expected2));
 
 	return EXIT_SUCCESS;

@@ -25,6 +25,14 @@ extern "C" {
 #define EZJSON_API
 #endif
 
+typedef enum Ezjson_Error {
+	EZJSON_SUCCESS,
+	EZJSON_ARGUMENT_ERROR,
+	EZJSON_LOCALE_ERROR,
+	EZJSON_MEMORY_ERROR,
+	EZJSON_SYNTAX_ERROR,
+} Ezjson_Error;
+
 typedef enum Ezjson_Kind {
 	EZJSON_NULL,
 	EZJSON_BOOLEAN,
@@ -66,9 +74,18 @@ typedef struct Ezjson_KeyValue {
 	Ezjson_Value value;
 } Ezjson_KeyValue;
 
-EZJSON_API bool Ezjson_ReadFile(FILE* file, Ezjson_Value* json);
+EZJSON_API bool Ezjson_ReadFile(
+	FILE* file,
+	Ezjson_Value* json,
+	Ezjson_Error* error
+);
 
-EZJSON_API bool Ezjson_ReadMemory(const void* memory, size_t size, Ezjson_Value* json);
+EZJSON_API bool Ezjson_ReadMemory(
+	const void* memory,
+	size_t size,
+	Ezjson_Value* json,
+	Ezjson_Error* error
+);
 
 EZJSON_API bool Ezjson_Equals(const Ezjson_Value* left, const Ezjson_Value* right);
 

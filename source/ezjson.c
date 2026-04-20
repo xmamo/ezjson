@@ -214,7 +214,7 @@ static bool DestroyString(Ezjson_String* string) {
 	return true;
 }
 
-static bool Ezjson_DestroyValue(Ezjson_Value* json, size_t depth, Ezjson_Error* error);
+static bool DestroyValue(Ezjson_Value* json, size_t depth, Ezjson_Error* error);
 
 static bool DestroyArray(Ezjson_Array* array, size_t depth, Ezjson_Error* error) {
 	assert(array != NULL && (array->length != 0 || array->items == NULL));
@@ -222,7 +222,7 @@ static bool DestroyArray(Ezjson_Array* array, size_t depth, Ezjson_Error* error)
 	assert(error != NULL);
 
 	for (size_t i = 0; i < array->length; ++i) {
-		if (!Ezjson_DestroyValue(&array->items[i], depth - 1, error))
+		if (!DestroyValue(&array->items[i], depth - 1, error))
 			return false;
 	}
 
@@ -241,7 +241,7 @@ static bool DestroyObject(Ezjson_Object* object, size_t depth, Ezjson_Error* err
 		free(item->key.data);
 		item->key = (Ezjson_String){0};
 
-		if (!Ezjson_DestroyValue(&item->value, depth - 1, error))
+		if (!DestroyValue(&item->value, depth - 1, error))
 			return false;
 	}
 
@@ -250,7 +250,7 @@ static bool DestroyObject(Ezjson_Object* object, size_t depth, Ezjson_Error* err
 	return true;
 }
 
-static bool Ezjson_DestroyValue(Ezjson_Value* value, size_t depth, Ezjson_Error* error) {
+static bool DestroyValue(Ezjson_Value* value, size_t depth, Ezjson_Error* error) {
 	assert(value != NULL);
 	assert(error != NULL);
 
@@ -791,7 +791,7 @@ static bool ReadValue(
 	return false;
 }
 
-static bool Ezjson_Read(
+static bool ReadStream(
 	Stream* stream,
 	Ezjson_Value* json,
 	size_t depth,
@@ -849,7 +849,7 @@ bool Ezjson_ReadFile(
 
 	flockfile(file);
 	int c = 0;
-	ok = Ezjson_Read(file, json, depth, &c, error);
+	ok = ReadStream(file, json, depth, &c, error);
 	ungetc(c, file);
 	funlockfile(file);
 
@@ -869,7 +869,7 @@ Cleanup0:
 	_lock_file(file);
 	int c = 0;
 	FileStream fileStream = {{FileStreamGet, cLocale}, file};
-	bool ok = Ezjson_Read(&fileStream.super, json, depth, &c, error);
+	bool ok = ReadStream(&fileStream.super, json, depth, &c, error);
 	ungetc(c, file);
 	_unlock_file(file);
 
@@ -878,7 +878,7 @@ Cleanup0:
 #else
 	int c = 0;
 	FileStream fileStream = {{FileStreamGet}, file};
-	bool ok = Ezjson_Read(&fileStream.super, json, depth, &c, error);
+	bool ok = ReadStream(&fileStream.super, json, depth, &c, error);
 	ungetc(c, file);
 	return ok;
 #endif
@@ -924,7 +924,7 @@ bool Ezjson_ReadMemory(
 	}
 
 	int c = 0;
-	ok = Ezjson_Read(file, json, depth, &c, error);
+	ok = ReadStream(file, json, depth, &c, error);
 
 	uselocale(oldLocale);
 Cleanup2:
@@ -943,18 +943,18 @@ Cleanup0:
 
 	MemoryStream memoryStream = {{MemoryStreamGet, cLocale}, memory, size};
 	int c = 0;
-	bool ok = Ezjson_Read(&memoryStream.super, json, depth, &c, error);
+	bool ok = ReadStream(&memoryStream.super, json, depth, &c, error);
 
 	_free_locale(cLocale);
 	return ok;
 #else
 	MemoryStream memoryStream = {{MemoryStreamGet}, memory, size};
 	int c = 0;
-	return Ezjson_Read(&memoryStream.super, json, depth, &c, error);
+	return ReadStream(&memoryStream.super, json, depth, &c, error);
 #endif
 }
 
-static bool Ezjson_ValueEquals(
+static bool ValueEquals(
 	const Ezjson_Value* left,
 	const Ezjson_Value* right,
 	size_t depth,
@@ -995,7 +995,7 @@ static bool Ezjson_ValueEquals(
 			return false;
 
 		for (size_t i = 0; i < left->array.length; ++i) {
-			if (!Ezjson_ValueEquals(&left->array.items[i], &right->array.items[i], depth - 1, error))
+			if (!ValueEquals(&left->array.items[i], &right->array.items[i], depth - 1, error))
 				return false;
 		}
 	}
@@ -1014,7 +1014,7 @@ static bool Ezjson_ValueEquals(
 			if (memcmp(leftItem->key.data, rightItem->key.data, leftItem->key.size) != 0)
 				return false;
 
-			if (!Ezjson_ValueEquals(&leftItem->value, &rightItem->value, depth - 1, error))
+			if (!ValueEquals(&leftItem->value, &rightItem->value, depth - 1, error))
 				return false;
 		}
 	}
@@ -1039,7 +1039,7 @@ bool Ezjson_Equals(
 	if (*error != EZJSON_NO_ERROR)
 		return false;
 
-	return Ezjson_ValueEquals(left, right, depth, error);
+	return ValueEquals(left, right, depth, error);
 }
 
 Ezjson_Value* Ezjson_Lookup(const Ezjson_Value* json, const Ezjson_String* key, Ezjson_Error* error) {
@@ -1079,5 +1079,5 @@ bool Ezjson_Destroy(Ezjson_Value* json, size_t depth, Ezjson_Error* error) {
 	if (*error != EZJSON_NO_ERROR)
 		return false;
 
-	return Ezjson_DestroyValue(json, depth, error);
+	return DestroyValue(json, depth, error);
 }

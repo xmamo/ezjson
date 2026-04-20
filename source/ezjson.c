@@ -405,12 +405,14 @@ static bool ReadString(Stream* stream, Ezjson_String* string, int* c) {
 		if (!ReadEscape(stream, &v2, &cu2, c)) return false;
 
 		if (cu2 == 0) {
+			if (!AppendCu(&string->data, &string->size, &capacity, cu1)) goto Error;
 			if (!GrowCharVec(&string->data, &string->size, &capacity, 1)) goto Error;
 			string->data[string->size - 2] = v2;
 			continue;
 		}
 
 		if (cu2 < 0xDC00 || cu2 > 0xDFFF) {
+			if (!AppendCu(&string->data, &string->size, &capacity, cu1)) goto Error;
 			if (!AppendCu(&string->data, &string->size, &capacity, cu2)) goto Error;
 			continue;
 		}

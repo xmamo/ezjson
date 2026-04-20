@@ -14,8 +14,8 @@ int main(void) {
 	assert(Ezjson_Equals(&json, &(Ezjson_Value){EZJSON_STRING, .string = {"\xF0\x9D\x84\x9E", 4}}));
 
 	json = (Ezjson_Value){0};
-	assert(Ezjson_ReadMemory("\"\\uD834 \\uDD1E\"", 15, &json));
-	assert(Ezjson_Equals(&json, &(Ezjson_Value){EZJSON_STRING, .string = {"\xED\xA0\xB4 \xED\xB4\x9E", 7}}));
+	assert(Ezjson_ReadMemory("\"\\uD834\\u0000\\uDD1E\"", 20, &json));
+	assert(Ezjson_Equals(&json, &(Ezjson_Value){EZJSON_STRING, .string = {"\xED\xA0\xB4\0\xED\xB4\x9E", 7}}));
 
 	return EXIT_SUCCESS;
 }

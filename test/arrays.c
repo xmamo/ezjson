@@ -1,13 +1,13 @@
 #undef NDEBUG
+
 #include <assert.h>
 #include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 
 #include <ezjson.h>
 
-static Ezjson_Value expected = {
+static const Ezjson_Value expected = {
 	.kind = EZJSON_ARRAY,
 	.array.length = 2,
 	.array.items = (Ezjson_Value[]){

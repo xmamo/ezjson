@@ -1,5 +1,7 @@
 #undef NDEBUG
-#define __STDC_WANT_LIB_EXT1__
+#define __STDC_WANT_LIB_EXT1__ 1
+#define _FILE_OFFSET_BITS 64
+
 #include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
@@ -9,7 +11,7 @@
 
 #include <ezjson.h>
 
-static Ezjson_Value expected1 = {
+static const Ezjson_Value expected1 = {
 	.kind = EZJSON_OBJECT,
 	.object.length = 1,
 	.object.items = (Ezjson_KeyValue[]){
@@ -69,7 +71,7 @@ static Ezjson_Value expected1 = {
 	},
 };
 
-static Ezjson_Value expected2 = {
+static const Ezjson_Value expected2 = {
 	.kind = EZJSON_ARRAY,
 	.array.length = 2,
 	.array.items = (Ezjson_Value[]){

@@ -15,7 +15,7 @@
 
 #ifdef __unix__
 typedef FILE Stream;
-#define StreamGet fgetc
+#define StreamGet(stream) fgetc(stream)
 #else
 typedef struct Stream {
 	int (*get)(void* stream);
@@ -41,11 +41,13 @@ static int StreamGet(Stream* stream) {
 }
 
 static int FileStreamGet(void* stream) {
+	assert(stream != NULL);
 	FileStream* fileStream = stream;
 	return fgetc(fileStream->file);
 }
 
 static int MemoryStreamGet(void* stream) {
+	assert(stream != NULL);
 	MemoryStream* memoryStream = stream;
 
 	if (memoryStream->size != 0) {
@@ -824,13 +826,13 @@ bool Ezjson_ReadFile(
 	if (error == NULL)
 		return Ezjson_ReadFile(file, json, depth, &(Ezjson_Error){EZJSON_NO_ERROR});
 
+	if (*error != EZJSON_NO_ERROR)
+		return false;
+
 	if (file == NULL || json == NULL) {
 		*error = EZJSON_ARGUMENT_ERROR;
 		return false;
 	}
-
-	if (*error != EZJSON_NO_ERROR)
-		return false;
 
 #if defined(__unix__)
 	bool ok = false;
@@ -894,13 +896,13 @@ bool Ezjson_ReadMemory(
 	if (error == NULL)
 		return Ezjson_ReadMemory(memory, size, json, depth, &(Ezjson_Error){EZJSON_NO_ERROR});
 
+	if (*error != EZJSON_NO_ERROR)
+		return false;
+
 	if ((memory == NULL && size != 0) || json == NULL) {
 		*error = EZJSON_ARGUMENT_ERROR;
 		return false;
 	}
-
-	if (*error != EZJSON_NO_ERROR)
-		return false;
 
 #if defined(__unix__)
 	bool ok = false;
@@ -936,7 +938,7 @@ Cleanup0:
 #elif defined(_WIN32)
 	_locale_t cLocale = NULL;
 
-	if ((cLocale =_wcreate_locale(LC_ALL, L"C")) == NULL) {
+	if ((cLocale = _wcreate_locale(LC_ALL, L"C")) == NULL) {
 		*error = EZJSON_LOCALE_ERROR;
 		return false;
 	}
@@ -1031,13 +1033,13 @@ bool Ezjson_Equals(
 	if (error == NULL)
 		return Ezjson_Equals(left, right, depth, &(Ezjson_Error){EZJSON_NO_ERROR});
 
+	if (*error != EZJSON_NO_ERROR)
+		return false;
+
 	if (left == NULL || right == NULL) {
 		*error = EZJSON_ARGUMENT_ERROR;
 		return left == right;
 	}
-
-	if (*error != EZJSON_NO_ERROR)
-		return false;
 
 	return ValueEquals(left, right, depth, error);
 }
@@ -1046,13 +1048,13 @@ Ezjson_Value* Ezjson_Lookup(const Ezjson_Value* json, const Ezjson_String* key, 
 	if (error == NULL)
 		return Ezjson_Lookup(json, key, &(Ezjson_Error){EZJSON_NO_ERROR});
 
+	if (*error != EZJSON_NO_ERROR)
+		return false;
+
 	if (json == NULL || key == NULL) {
 		*error = EZJSON_ARGUMENT_ERROR;
 		return NULL;
 	}
-
-	if (*error != EZJSON_NO_ERROR)
-		return false;
 
 	if (json->kind == EZJSON_OBJECT) {
 		for (size_t i = json->object.length; i > 0; --i) {
@@ -1071,13 +1073,13 @@ bool Ezjson_Destroy(Ezjson_Value* json, size_t depth, Ezjson_Error* error) {
 	if (error == NULL)
 		return Ezjson_Destroy(json, depth, &(Ezjson_Error){EZJSON_NO_ERROR});
 
+	if (*error != EZJSON_NO_ERROR)
+		return false;
+
 	if (json == NULL) {
 		*error = EZJSON_ARGUMENT_ERROR;
 		return true;
 	}
-
-	if (*error != EZJSON_NO_ERROR)
-		return false;
 
 	return DestroyValue(json, depth, error);
 }

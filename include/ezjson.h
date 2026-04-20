@@ -26,7 +26,7 @@ extern "C" {
 #endif
 
 typedef enum Ezjson_Error {
-	EZJSON_SUCCESS,
+	EZJSON_NO_ERROR,
 	EZJSON_ARGUMENT_ERROR,
 	EZJSON_LOCALE_ERROR,
 	EZJSON_MEMORY_ERROR,

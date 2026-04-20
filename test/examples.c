@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -161,8 +162,8 @@ int main(void) {
 	assert(stream != NULL);
 #endif
 	Ezjson_Value actual = {0};
-	assert(Ezjson_ReadFile(stream, &actual, NULL));
-	assert(Ezjson_Equals(&actual, &expected1));
+	assert(Ezjson_ReadFile(stream, &actual, SIZE_MAX, NULL));
+	assert(Ezjson_Equals(&actual, &expected1, SIZE_MAX, NULL));
 
 #if defined(__STDC_LIB_EXT1__) || defined(__STDC_SECURE_LIB__)
 	stream = NULL;
@@ -173,8 +174,8 @@ int main(void) {
 	assert(stream != NULL);
 #endif
 	actual = (Ezjson_Value){0};
-	assert(Ezjson_ReadFile(stream, &actual, NULL));
-	assert(Ezjson_Equals(&actual, &expected2));
+	assert(Ezjson_ReadFile(stream, &actual, SIZE_MAX, NULL));
+	assert(Ezjson_Equals(&actual, &expected2, SIZE_MAX, NULL));
 
 	return EXIT_SUCCESS;
 }

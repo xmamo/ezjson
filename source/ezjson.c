@@ -209,33 +209,67 @@ static bool AppendCu(
 	return false;
 }
 
-static void DestroyString(Ezjson_String* string) {
+static bool DestroyString(Ezjson_String* string) {
+	assert(string != NULL);
 	free(string->data);
 	*string = (Ezjson_String){0};
+	return true;
 }
 
-static void DestroyArray(Ezjson_Array* array) {
+static bool Ezjson_DestroyValue(Ezjson_Value* json, size_t depth, Ezjson_Error* error);
+
+static bool DestroyArray(Ezjson_Array* array, size_t depth, Ezjson_Error* error) {
 	assert(array != NULL && (array->length != 0 || array->items == NULL));
+	assert(depth != 0);
+	assert(error != NULL);
 
 	for (size_t i = 0; i < array->length; ++i) {
-		Ezjson_Destroy(&array->items[i]);
+		if (!Ezjson_DestroyValue(&array->items[i], depth - 1, error))
+			return false;
 	}
 
 	free(array->items);
 	*array = (Ezjson_Array){0};
+	return true;
 }
 
-static void DestroyObject(Ezjson_Object* object) {
+static bool DestroyObject(Ezjson_Object* object, size_t depth, Ezjson_Error* error) {
 	assert(object != NULL && (object->length != 0 || object->items == NULL));
+	assert(depth != 0);
+	assert(error != NULL);
 
 	for (size_t i = 0; i < object->length; ++i) {
 		Ezjson_KeyValue* item = &object->items[i];
 		free(item->key.data);
-		Ezjson_Destroy(&item->value);
+		item->key = (Ezjson_String){0};
+
+		if (!Ezjson_DestroyValue(&item->value, depth - 1, error))
+			return false;
 	}
 
 	free(object->items);
 	*object = (Ezjson_Object){0};
+	return true;
+}
+
+static bool Ezjson_DestroyValue(Ezjson_Value* value, size_t depth, Ezjson_Error* error) {
+	assert(value != NULL);
+	assert(error != NULL);
+
+	if (depth == 0) {
+		*error = EZJSON_DEPTH_ERROR;
+		return false;
+	}
+
+	if (value->kind == EZJSON_STRING) {
+		return DestroyString(&value->string);
+	} else if (value->kind == EZJSON_ARRAY) {
+		return DestroyArray(&value->array, depth, error);
+	} else if (value->kind == EZJSON_OBJECT) {
+		return DestroyObject(&value->object, depth, error);
+	} else {
+		return true;
+	}
 }
 
 static void SkipWs(Stream* stream, int* c) {
@@ -492,13 +526,30 @@ Error:
 	return false;
 }
 
-static bool ReadValue(Stream* stream, Ezjson_Value* value, int* c, Ezjson_Error* error);
+static bool ReadValue(
+	Stream* stream,
+	Ezjson_Value* value,
+	int* c,
+	size_t depth,
+	Ezjson_Error* error
+);
 
-static bool ReadArray(Stream* stream, Ezjson_Array* array, int* c, Ezjson_Error* error) {
+static bool ReadArray(
+	Stream* stream,
+	Ezjson_Array* array,
+	int* c,
+	size_t depth,
+	Ezjson_Error* error
+) {
 	assert(stream != NULL);
 	assert(array != NULL && array->items == NULL && array->length == 0);
 	assert(c != NULL && *c == '[');
 	assert(error != NULL);
+
+	if (depth == 0) {
+		*error = EZJSON_DEPTH_ERROR;
+		return false;
+	}
 
 	*c = StreamGet(stream);
 	SkipWs(stream, c);
@@ -508,7 +559,7 @@ static bool ReadArray(Stream* stream, Ezjson_Array* array, int* c, Ezjson_Error*
 
 	while (true) {
 		Ezjson_Value item = {0};
-		if (!ReadValue(stream, &item, c, error)) goto Error;
+		if (!ReadValue(stream, &item, c, depth - 1, error)) goto Error;
 
 		if (*c == EOF) {
 			*error = EZJSON_SYNTAX_ERROR;
@@ -545,11 +596,22 @@ Error:
 	return false;
 }
 
-static bool ReadObject(Stream* stream, Ezjson_Object* object, int* c, Ezjson_Error* error) {
+static bool ReadObject(
+	Stream* stream,
+	Ezjson_Object* object,
+	int* c,
+	size_t depth,
+	Ezjson_Error* error
+) {
 	assert(stream != NULL);
 	assert(object != NULL && object->items == NULL && object->length == 0);
 	assert(c != NULL && *c == (unsigned char)'{');
 	assert(error != NULL);
+
+	if (depth == 0) {
+		*error = EZJSON_DEPTH_ERROR;
+		return false;
+	}
 
 	*c = StreamGet(stream);
 	SkipWs(stream, c);
@@ -575,7 +637,7 @@ static bool ReadObject(Stream* stream, Ezjson_Object* object, int* c, Ezjson_Err
 		}
 
 		*c = StreamGet(stream);
-		if (!ReadValue(stream, &object->items[object->length - 1].value, c, error)) goto Error;
+		if (!ReadValue(stream, &object->items[object->length - 1].value, c, depth - 1, error)) goto Error;
 
 		if (*c == (unsigned char)'}')
 			break;
@@ -600,11 +662,17 @@ static bool ReadObject(Stream* stream, Ezjson_Object* object, int* c, Ezjson_Err
 	return true;
 
 Error:
-	DestroyObject(object);
+	DestroyObject(object, SIZE_MAX, &(Ezjson_Error){EZJSON_SUCCESS});
 	return false;
 }
 
-static bool ReadValue(Stream* stream, Ezjson_Value* value, int* c, Ezjson_Error* error) {
+static bool ReadValue(
+	Stream* stream,
+	Ezjson_Value* value,
+	int* c,
+	size_t depth,
+	Ezjson_Error* error
+) {
 	assert(stream != NULL);
 	assert(value != NULL);
 	assert(c != NULL && (*c == EOF || (*c >= 0 && *c <= UCHAR_MAX)));
@@ -716,19 +784,25 @@ static bool ReadValue(Stream* stream, Ezjson_Value* value, int* c, Ezjson_Error*
 
 	if (*c == (unsigned char)'[') {
 		*value = (Ezjson_Value){EZJSON_ARRAY, .array = (Ezjson_Array){0}};
-		return ReadArray(stream, &value->array, c, error);
+		return ReadArray(stream, &value->array, c, depth, error);
 	}
 
 	if (*c == (unsigned char)'{') {
 		*value = (Ezjson_Value){EZJSON_OBJECT, .object = (Ezjson_Object){0}};
-		return ReadObject(stream, &value->object, c, error);
+		return ReadObject(stream, &value->object, c, depth, error);
 	}
 
 	*error = EZJSON_SYNTAX_ERROR;
 	return false;
 }
 
-static bool Ezjson_Read(Stream* stream, Ezjson_Value* json, int* c, Ezjson_Error* error) {
+static bool Ezjson_Read(
+	Stream* stream,
+	Ezjson_Value* json,
+	size_t depth,
+	int* c,
+	Ezjson_Error* error
+) {
 	assert(stream != NULL);
 	assert(json != NULL);
 	assert(c != NULL && *c == 0);
@@ -740,12 +814,17 @@ static bool Ezjson_Read(Stream* stream, Ezjson_Value* json, int* c, Ezjson_Error
 		*c = StreamGet(stream);
 	}
 
-	return ReadValue(stream, json, c, error);
+	return ReadValue(stream, json, c, depth, error);
 }
 
-bool Ezjson_ReadFile(FILE* file, Ezjson_Value* json, Ezjson_Error* error) {
+bool Ezjson_ReadFile(
+	FILE* file,
+	Ezjson_Value* json,
+	size_t depth,
+	Ezjson_Error* error
+) {
 	if (error == NULL)
-		return Ezjson_ReadFile(file, json, &(Ezjson_Error){EZJSON_SUCCESS});
+		return Ezjson_ReadFile(file, json, depth, &(Ezjson_Error){EZJSON_SUCCESS});
 
 	if (file == NULL || json == NULL) {
 		*error = EZJSON_ARGUMENT_ERROR;
@@ -769,7 +848,7 @@ bool Ezjson_ReadFile(FILE* file, Ezjson_Value* json, Ezjson_Error* error) {
 
 	flockfile(file);
 	int c = 0;
-	ok = Ezjson_Read(file, json, &c, error);
+	ok = Ezjson_Read(file, json, depth, &c, error);
 	ungetc(c, file);
 	funlockfile(file);
 
@@ -789,7 +868,7 @@ Cleanup0:
 	_lock_file(file);
 	int c = 0;
 	FileStream fileStream = {{FileStreamGet, cLocale}, file};
-	bool ok = Ezjson_Read(&fileStream.super, json, &c, error);
+	bool ok = Ezjson_Read(&fileStream.super, json, depth, &c, error);
 	ungetc(c, file);
 	_unlock_file(file);
 
@@ -798,15 +877,21 @@ Cleanup0:
 #else
 	int c = 0;
 	FileStream fileStream = {{FileStreamGet}, file};
-	bool ok = Ezjson_Read(&fileStream.super, json, &c, error);
+	bool ok = Ezjson_Read(&fileStream.super, json, depth, &c, error);
 	ungetc(c, file);
 	return ok;
 #endif
 }
 
-bool Ezjson_ReadMemory(const void* memory, size_t size, Ezjson_Value* json, Ezjson_Error* error) {
+bool Ezjson_ReadMemory(
+	const void* memory,
+	size_t size,
+	Ezjson_Value* json,
+	size_t depth,
+	Ezjson_Error* error
+) {
 	if (error == NULL)
-		return Ezjson_ReadMemory(memory, size, json, &(Ezjson_Error){EZJSON_SUCCESS});
+		return Ezjson_ReadMemory(memory, size, json, depth, &(Ezjson_Error){EZJSON_SUCCESS});
 
 	if ((memory == NULL && size != 0) || json == NULL) {
 		*error = EZJSON_ARGUMENT_ERROR;
@@ -835,7 +920,7 @@ bool Ezjson_ReadMemory(const void* memory, size_t size, Ezjson_Value* json, Ezjs
 	}
 
 	int c = 0;
-	ok = Ezjson_Read(file, json, &c, error);
+	ok = Ezjson_Read(file, json, depth, &c, error);
 
 	uselocale(oldLocale);
 Cleanup2:
@@ -854,20 +939,32 @@ Cleanup0:
 
 	MemoryStream memoryStream = {{MemoryStreamGet, cLocale}, memory, size};
 	int c = 0;
-	bool ok = Ezjson_Read(&memoryStream.super, json, &c, error);
+	bool ok = Ezjson_Read(&memoryStream.super, json, depth, &c, error);
 
 	_free_locale(cLocale);
 	return ok;
 #else
 	MemoryStream memoryStream = {{MemoryStreamGet}, memory, size};
 	int c = 0;
-	return Ezjson_Read(&memoryStream.super, json, &c, error);
+	return Ezjson_Read(&memoryStream.super, json, depth, &c, error);
 #endif
 }
 
-bool Ezjson_Equals(const Ezjson_Value* left, const Ezjson_Value* right) {
-	if (left == NULL || right == NULL)
+bool Ezjson_Equals(
+	const Ezjson_Value* left,
+	const Ezjson_Value* right,
+	size_t depth,
+	Ezjson_Error* error
+) {
+	if (left == NULL || right == NULL) {
+		if (error != NULL) *error = EZJSON_ARGUMENT_ERROR;
 		return left == right;
+	}
+
+	if (depth == 0) {
+		if (error != NULL) *error = EZJSON_DEPTH_ERROR;
+		return false;
+	}
 
 	if (left->kind != right->kind)
 		return false;
@@ -895,7 +992,7 @@ bool Ezjson_Equals(const Ezjson_Value* left, const Ezjson_Value* right) {
 			return false;
 
 		for (size_t i = 0; i < left->array.length; ++i) {
-			if (!Ezjson_Equals(&left->array.items[i], &right->array.items[i]))
+			if (!Ezjson_Equals(&left->array.items[i], &right->array.items[i], depth - 1, error))
 				return false;
 		}
 	}
@@ -914,7 +1011,7 @@ bool Ezjson_Equals(const Ezjson_Value* left, const Ezjson_Value* right) {
 			if (memcmp(leftItem->key.data, rightItem->key.data, leftItem->key.size) != 0)
 				return false;
 
-			if (!Ezjson_Equals(&leftItem->value, &rightItem->value))
+			if (!Ezjson_Equals(&leftItem->value, &rightItem->value, depth - 1, error))
 				return false;
 		}
 	}
@@ -922,31 +1019,36 @@ bool Ezjson_Equals(const Ezjson_Value* left, const Ezjson_Value* right) {
 	return true;
 }
 
-Ezjson_Value* Ezjson_Lookup(const Ezjson_Value* json, const Ezjson_String* key) {
-	if (json == NULL || key == NULL)
+Ezjson_Value* Ezjson_Lookup(const Ezjson_Value* json, const Ezjson_String* key, Ezjson_Error* error) {
+	if (error == NULL)
+		return Ezjson_Lookup(json, key, &(Ezjson_Error){EZJSON_SUCCESS});
+	
+	if (json == NULL || key == NULL) {
+		*error = EZJSON_ARGUMENT_ERROR;
 		return NULL;
-
-	if (json->kind != EZJSON_OBJECT)
-		return NULL;
-
-	for (size_t i = json->object.length; i > 0; --i) {
-		Ezjson_KeyValue* item = &json->object.items[i - 1];
-
-		if (item->key.size == key->size && memcmp(item->key.data, key->data, item->key.size) == 0)
-			return &item->value;
 	}
 
+	if (json->kind == EZJSON_OBJECT) {
+		for (size_t i = json->object.length; i > 0; --i) {
+			Ezjson_KeyValue* item = &json->object.items[i - 1];
+
+			if (item->key.size == key->size && memcmp(item->key.data, key->data, item->key.size) == 0)
+				return &item->value;
+		}
+	}
+
+	*error = EZJSON_KEY_ERROR;
 	return NULL;
 }
 
-void Ezjson_Destroy(Ezjson_Value* json) {
-	if (json != NULL) return;
+bool Ezjson_Destroy(Ezjson_Value* json, size_t depth, Ezjson_Error* error) {
+	if (error == NULL)
+		return Ezjson_Destroy(json, depth, &(Ezjson_Error){EZJSON_SUCCESS});
 
-	if (json->kind == EZJSON_STRING) {
-		DestroyString(&json->string);
-	} else if (json->kind == EZJSON_ARRAY) {
-		DestroyArray(&json->array);
-	} else if (json->kind == EZJSON_OBJECT) {
-		DestroyObject(&json->object);
+	if (json == NULL) {
+		*error = EZJSON_ARGUMENT_ERROR;
+		return true;
 	}
+
+	return Ezjson_DestroyValue(json, depth, error);
 }

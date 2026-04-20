@@ -34,26 +34,54 @@ int main(void) {
 	Ezjson_Value json = {0};
 	Ezjson_Error error = EZJSON_NO_ERROR;
 	assert(Ezjson_ReadMemory("[[], [[]]]", 10, &json, 3, &error));
+	assert(error == EZJSON_NO_ERROR);
+
+	error = EZJSON_NO_ERROR;
 	assert(Ezjson_Equals(&json, &expected, 3, &error));
-	assert(!Ezjson_Equals(&json, &expected, 2, &error) && error == EZJSON_DEPTH_ERROR);
-	assert(!Ezjson_Equals(&json, &expected, 1, &error) && error == EZJSON_DEPTH_ERROR);
-	assert(!Ezjson_Equals(&json, &expected, 0, &error) && error == EZJSON_DEPTH_ERROR);
-	assert(!Ezjson_Destroy(&json, 0, &error) && error == EZJSON_DEPTH_ERROR);
-	assert(!Ezjson_Destroy(&json, 1, &error) && error == EZJSON_DEPTH_ERROR);
-	assert(!Ezjson_Destroy(&json, 2, &error) && error == EZJSON_DEPTH_ERROR);
+	assert(error == EZJSON_NO_ERROR);
+
+	error = EZJSON_NO_ERROR;
+	assert(!Ezjson_Equals(&json, &expected, 2, &error));
+	assert(error == EZJSON_DEPTH_ERROR);
+
+	error = EZJSON_NO_ERROR;
+	assert(!Ezjson_Equals(&json, &expected, 1, &error));
+	assert(error == EZJSON_DEPTH_ERROR);
+
+	error = EZJSON_NO_ERROR;
+	assert(!Ezjson_Equals(&json, &expected, 0, &error));
+	assert(error == EZJSON_DEPTH_ERROR);
+
+	error = EZJSON_NO_ERROR;
+	assert(!Ezjson_Destroy(&json, 0, &error));
+	assert(error == EZJSON_DEPTH_ERROR);
+
+	error = EZJSON_NO_ERROR;
+	assert(!Ezjson_Destroy(&json, 1, &error));
+	assert(error == EZJSON_DEPTH_ERROR);
+
+	error = EZJSON_NO_ERROR;
+	assert(!Ezjson_Destroy(&json, 2, &error));
+	assert(error == EZJSON_DEPTH_ERROR);
+
+	error = EZJSON_NO_ERROR;
 	assert(Ezjson_Destroy(&json, 3, &error));
+	assert(error == EZJSON_NO_ERROR);
 
 	json = (Ezjson_Value){0};
 	error = EZJSON_NO_ERROR;
-	assert(!Ezjson_ReadMemory("[[], [[]]]", 10, &json, 2, &error) && error == EZJSON_DEPTH_ERROR);
+	assert(!Ezjson_ReadMemory("[[], [[]]]", 10, &json, 2, &error));
+	assert(error == EZJSON_DEPTH_ERROR);
 
 	json = (Ezjson_Value){0};
 	error = EZJSON_NO_ERROR;
-	assert(!Ezjson_ReadMemory("[[], [[]]]", 10, &json, 1, &error) && error == EZJSON_DEPTH_ERROR);
+	assert(!Ezjson_ReadMemory("[[], [[]]]", 10, &json, 1, &error));
+	assert(error == EZJSON_DEPTH_ERROR);
 
 	json = (Ezjson_Value){0};
 	error = EZJSON_NO_ERROR;
-	assert(!Ezjson_ReadMemory("[[], [[]]]", 10, &json, 0, &error) && error == EZJSON_DEPTH_ERROR);
+	assert(!Ezjson_ReadMemory("[[], [[]]]", 10, &json, 0, &error));
+	assert(error == EZJSON_DEPTH_ERROR);
 
 	return EXIT_SUCCESS;
 }

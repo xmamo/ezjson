@@ -831,6 +831,9 @@ bool Ezjson_ReadFile(
 		return false;
 	}
 
+	if (*error != EZJSON_NO_ERROR)
+		return false;
+
 #if defined(__unix__)
 	bool ok = false;
 	locale_t cLocale = (locale_t)0;
@@ -897,6 +900,9 @@ bool Ezjson_ReadMemory(
 		*error = EZJSON_ARGUMENT_ERROR;
 		return false;
 	}
+
+	if (*error != EZJSON_NO_ERROR)
+		return false;
 
 #if defined(__unix__)
 	bool ok = false;
@@ -1032,6 +1038,9 @@ bool Ezjson_Equals(
 		return left == right;
 	}
 
+	if (*error != EZJSON_NO_ERROR)
+		return false;
+
 	return Ezjson_ValueEquals(left, right, depth, error);
 }
 
@@ -1043,6 +1052,9 @@ Ezjson_Value* Ezjson_Lookup(const Ezjson_Value* json, const Ezjson_String* key, 
 		*error = EZJSON_ARGUMENT_ERROR;
 		return NULL;
 	}
+
+	if (*error != EZJSON_NO_ERROR)
+		return false;
 
 	if (json->kind == EZJSON_OBJECT) {
 		for (size_t i = json->object.length; i > 0; --i) {
@@ -1065,6 +1077,9 @@ bool Ezjson_Destroy(Ezjson_Value* json, size_t depth, Ezjson_Error* error) {
 		*error = EZJSON_ARGUMENT_ERROR;
 		return true;
 	}
+
+	if (*error != EZJSON_NO_ERROR)
+		return false;
 
 	return Ezjson_DestroyValue(json, depth, error);
 }

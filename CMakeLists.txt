@@ -34,6 +34,10 @@ if(BUILD_TESTING)
 	target_sources(test-examples PRIVATE test/examples.c)
 	target_link_libraries(test-examples PRIVATE ezjson)
 
+	add_executable(test-pointers)
+	target_sources(test-pointers PRIVATE test/pointers.c)
+	target_link_libraries(test-pointers PRIVATE ezjson)
+
 	add_test(
 		NAME test-numbers
 		COMMAND test-numbers
@@ -55,6 +59,12 @@ if(BUILD_TESTING)
 	add_test(
 		NAME test-examples
 		COMMAND test-examples
+		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test"
+	)
+
+	add_test(
+		NAME test-pointers
+		COMMAND test-pointers
 		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test"
 	)
 endif()

@@ -1124,13 +1124,13 @@ Ezjson_Value* Ezjson_At(
 	}
 
 	while (jsonPointerSize != 0) {
-		jsonPointer += 1;
-		jsonPointerSize -= 1;
-
 		if (*jsonPointer != '/') {
 			*error = EZJSON_SYNTAX_ERROR;
 			return NULL;
 		}
+
+		jsonPointer += 1;
+		jsonPointerSize -= 1;
 
 		size_t tokenSize = 0;
 		while (tokenSize < jsonPointerSize && jsonPointer[tokenSize] != '/') tokenSize += 1;
@@ -1178,26 +1178,27 @@ Ezjson_Value* Ezjson_At(
 		if (json->kind == EZJSON_OBJECT) {
 			for (size_t i = json->object.length; i > 0; --i) {
 				const Ezjson_KeyValue* item = &json->object.items[i - 1];
+
+				size_t ti = 0;
 				size_t ki = 0;
 
-				for (size_t ti = 0; ti < tokenSize && ki < item->key.size;) {
+				while (ti < tokenSize && ki < item->key.size) {
 					char c = jsonPointer[ti];
 
-					if (strcmp(jsonPointer + ti, "~0") == 0) {
-						c = '~';
+					if (c == '~' && jsonPointer[ti + 1] == '0') {
 						ti += 2;
-					} else if (strcmp(jsonPointer + ti, "~1") == 0) {
+					} else if (c == '~' && jsonPointer[ti + 1] == '1') {
 						c = '/';
 						ti += 2;
 					} else {
 						ti += 1;
 					}
 
-					if (c != item->key.data[ki++])
-						break;
+					if (c != item->key.data[ki]) break;
+					ki += 1;
 				}
 
-				if (ki == item->key.size) {
+				if (ti == tokenSize && ki == item->key.size) {
 					json = &item->value;
 					goto Success;
 				}

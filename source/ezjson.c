@@ -216,7 +216,7 @@ static bool DestroyString(Ezjson_String* string) {
 	return true;
 }
 
-static bool DestroyValue(Ezjson_Value* json, size_t depth, Ezjson_Error* error);
+static bool DestroyValue(Ezjson_Value* value, size_t depth, Ezjson_Error* error);
 
 static bool DestroyArray(Ezjson_Array* array, size_t depth, Ezjson_Error* error) {
 	assert(array != NULL && (array->length != 0 || array->items == NULL));
@@ -289,7 +289,7 @@ static bool ReadNumeral(Stream* stream, char** numeral, int* c, Ezjson_Error* er
 
 	size_t size = 0;
 	size_t capacity = 0;
-	if (!GrowCharVec(numeral, &size, &capacity, 2, error)) return error;
+	if (!GrowCharVec(numeral, &size, &capacity, 2, error)) return false;
 	(*numeral)[0] = (char)*c;
 
 	// Data is now: [0-9-]
@@ -454,7 +454,7 @@ static bool ReadString(Stream* stream, Ezjson_String* string, int* c, Ezjson_Err
 	assert(error != NULL);
 
 	size_t capacity = 0;
-	if (!GrowCharVec(&string->data, &string->size, &capacity, 1, error)) return error;
+	if (!GrowCharVec(&string->data, &string->size, &capacity, 1, error)) return false;
 
 	while (true) {
 		*c = StreamGet(stream);

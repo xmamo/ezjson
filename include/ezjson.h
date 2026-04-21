@@ -79,7 +79,7 @@ typedef struct Ezjson_KeyValue {
 EZJSON_API bool Ezjson_ReadFile(
 	FILE* file,
 	Ezjson_Value* json,
-	size_t depth,
+	size_t maxDepth,
 	Ezjson_Error* error
 );
 
@@ -87,32 +87,34 @@ EZJSON_API bool Ezjson_ReadMemory(
 	const void* memory,
 	size_t size,
 	Ezjson_Value* json,
-	size_t depth,
+	size_t maxDepth,
 	Ezjson_Error* error
 );
 
 EZJSON_API bool Ezjson_Equals(
 	const Ezjson_Value* left,
 	const Ezjson_Value* right,
-	size_t depth,
+	size_t maxDepth,
 	Ezjson_Error* error
 );
 
 EZJSON_API Ezjson_Value* Ezjson_Lookup(
 	const Ezjson_Value* json,
-	const Ezjson_String* key,
+	const char* key,
+	size_t keySize,
 	Ezjson_Error* error
 );
 
 EZJSON_API Ezjson_Value* Ezjson_At(
 	const Ezjson_Value* json,
-	const Ezjson_String* pointer,
+	const char* jsonPointer,
+	size_t jsonPointerSize,
 	Ezjson_Error* error
 );
 
 EZJSON_API bool Ezjson_Destroy(
 	Ezjson_Value* json,
-	size_t depth,
+	size_t maxDepth,
 	Ezjson_Error* error
 );
 

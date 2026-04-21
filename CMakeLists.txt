@@ -18,25 +18,25 @@ target_sources(ezjson
 )
 
 if(BUILD_TESTING)
-	add_executable(test-examples)
-	target_sources(test-examples PRIVATE test/examples.c)
-	target_link_libraries(test-examples PRIVATE ezjson)
+	add_executable(test-numbers)
+	target_sources(test-numbers PRIVATE test/numbers.c)
+	target_link_libraries(test-numbers PRIVATE ezjson)
 
 	add_executable(test-strings)
 	target_sources(test-strings PRIVATE test/strings.c)
 	target_link_libraries(test-strings PRIVATE ezjson)
 
-	add_executable(test-numbers)
-	target_sources(test-numbers PRIVATE test/numbers.c)
-	target_link_libraries(test-numbers PRIVATE ezjson)
-
 	add_executable(test-arrays)
 	target_sources(test-arrays PRIVATE test/arrays.c)
 	target_link_libraries(test-arrays PRIVATE ezjson)
 
+	add_executable(test-examples)
+	target_sources(test-examples PRIVATE test/examples.c)
+	target_link_libraries(test-examples PRIVATE ezjson)
+
 	add_test(
-		NAME test-examples
-		COMMAND test-examples
+		NAME test-numbers
+		COMMAND test-numbers
 		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test"
 	)
 
@@ -47,14 +47,14 @@ if(BUILD_TESTING)
 	)
 
 	add_test(
-		NAME test-numbers
-		COMMAND test-numbers
+		NAME test-arrays
+		COMMAND test-arrays
 		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test"
 	)
 
 	add_test(
-		NAME test-arrays
-		COMMAND test-arrays
+		NAME test-examples
+		COMMAND test-examples
 		WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test"
 	)
 endif()

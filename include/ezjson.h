@@ -104,6 +104,12 @@ EZJSON_API Ezjson_Value* Ezjson_Lookup(
 	Ezjson_Error* error
 );
 
+EZJSON_API Ezjson_Value* Ezjson_At(
+	const Ezjson_Value* json,
+	const Ezjson_String* pointer,
+	Ezjson_Error* error
+);
+
 EZJSON_API bool Ezjson_Destroy(
 	Ezjson_Value* json,
 	size_t depth,

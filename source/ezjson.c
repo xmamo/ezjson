@@ -252,11 +252,10 @@ static bool DestroyObject(Ezjson_Object* object, size_t maxDepth, Ezjson_Error* 
 	assert(error != NULL);
 
 	for (size_t i = 0; i < object->length; ++i) {
-		Ezjson_KeyValue* item = &object->items[i];
-		free(item->key.data);
-		item->key = (Ezjson_String){0};
+		free(object->items[i].key.data);
+		object->items[i].key = (Ezjson_String){0};
 
-		if (!DestroyValue(&item->value, maxDepth - 1, error))
+		if (!DestroyValue(&object->items[i].value, maxDepth - 1, error))
 			return false;
 	}
 
@@ -414,32 +413,17 @@ static bool ReadEscape(Stream* stream, char* v, char16_t* cu, int* c, Ezjson_Err
 	assert(c != NULL && *c == (unsigned char)'\\');
 	assert(error != NULL);
 
-	static const char escapeKey[] =
-		"\"\\/bfnrt";
-
-	static const char escapeValue[] =
-		"\"\\/\b\f\n\r\t";
-
-	static const char hexKey[] =
-		"0123456789"
-		"abcdef"
-		"ABCDEF";
-
-	static const unsigned short hexValue[] = {
-		0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
-		0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
-		0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
-	};
-
 	if ((*c = StreamGet(stream)) == EOF) {
 		*error = EZJSON_SYNTAX_ERROR;
 		return false;
 	}
 
-	const char* p = strchr(escapeKey, *c);
+	static const char escapeK[] = "\"\\/bfnrt";
+	static const char escapeV[] = "\"\\/\b\f\n\r\t";
+	const char* p = strchr(escapeK, *c);
 
 	if (p != NULL) {
-		*v = escapeValue[p - escapeKey];
+		*v = escapeV[p - escapeK];
 		return true;
 	}
 
@@ -449,12 +433,23 @@ static bool ReadEscape(Stream* stream, char* v, char16_t* cu, int* c, Ezjson_Err
 	}
 
 	for (int i = 0; i < 4; ++i) {
-		if ((*c = StreamGet(stream)) == EOF || (p = strchr(hexKey, *c)) == NULL) {
+		static const char hexK[] =
+			"0123456789"
+			"abcdef"
+			"ABCDEF";
+
+		static const unsigned short hexV[] = {
+			0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
+			0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F,
+			0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F
+		};
+
+		if ((*c = StreamGet(stream)) == EOF || (p = strchr(hexK, *c)) == NULL) {
 			*error = EZJSON_SYNTAX_ERROR;
 			return false;
 		}
 
-		*cu = (*cu << 4) | hexValue[p - hexKey];
+		*cu = (*cu << 4) | hexV[p - hexK];
 	}
 
 	return true;
@@ -712,10 +707,7 @@ static bool ReadValue(
 		}
 
 		*c = StreamGet(stream);
-		return true;
-	}
-
-	if (*c == (unsigned char)'f') {
+	} else if (*c == (unsigned char)'f') {
 		*value = (Ezjson_Value){EZJSON_BOOLEAN, .boolean = false};
 
 		if ((*c = StreamGet(stream)) != (unsigned char)'a') {
@@ -739,10 +731,7 @@ static bool ReadValue(
 		}
 
 		*c = StreamGet(stream);
-		return true;
-	}
-
-	if (*c == (unsigned char)'t') {
+	} else if (*c == (unsigned char)'t') {
 		*value = (Ezjson_Value){EZJSON_BOOLEAN, .boolean = true};
 
 		if ((*c = StreamGet(stream)) != (unsigned char)'r') {
@@ -761,10 +750,7 @@ static bool ReadValue(
 		}
 
 		*c = StreamGet(stream);
-		return true;
-	}
-
-	if (*c != EOF && strchr("0123456789-", *c) != NULL) {
+	} else if (*c != EOF && strchr("0123456789-", *c) != NULL) {
 		*value = (Ezjson_Value){EZJSON_NUMBER, .number = 0.0};
 
 		char* numeral = NULL;
@@ -779,31 +765,25 @@ static bool ReadValue(
 		bool ok = end > numeral && *end == '\0';
 		free(numeral);
 
-		if (ok) {
-			return true;
-		} else {
+		if (!ok) {
 			*error = EZJSON_SYNTAX_ERROR;
 			return false;
 		}
-	}
-
-	if (*c == (unsigned char)'"') {
+	} else if (*c == (unsigned char)'"') {
 		*value = (Ezjson_Value){EZJSON_STRING, .string = (Ezjson_String){0}};
 		return ReadString(stream, &value->string, c, error);
-	}
-
-	if (*c == (unsigned char)'[') {
+	} else if (*c == (unsigned char)'[') {
 		*value = (Ezjson_Value){EZJSON_ARRAY, .array = (Ezjson_Array){0}};
 		return ReadArray(stream, &value->array, c, maxDepth, error);
-	}
-
-	if (*c == (unsigned char)'{') {
+	} else if (*c == (unsigned char)'{') {
 		*value = (Ezjson_Value){EZJSON_OBJECT, .object = (Ezjson_Object){0}};
 		return ReadObject(stream, &value->object, c, maxDepth, error);
+	} else {
+		*error = EZJSON_SYNTAX_ERROR;
+		return false;
 	}
 
-	*error = EZJSON_SYNTAX_ERROR;
-	return false;
+	return true;
 }
 
 static bool ReadStream(
@@ -990,22 +970,16 @@ static bool ValueEquals(
 	if (left->kind == EZJSON_BOOLEAN) {
 		if (left->boolean != right->boolean)
 			return false;
-	}
-
-	if (left->kind == EZJSON_NUMBER) {
+	} else if (left->kind == EZJSON_NUMBER) {
 		if (left->number != right->number)
 			return false;
-	}
-
-	if (left->kind == EZJSON_STRING) {
+	} else if (left->kind == EZJSON_STRING) {
 		if (left->string.size != right->string.size)
 			return false;
 
 		if (memcmp(left->string.data, right->string.data, left->string.size) != 0)
 			return false;
-	}
-
-	if (left->kind == EZJSON_ARRAY) {
+	} else if (left->kind == EZJSON_ARRAY) {
 		if (left->array.length != right->array.length)
 			return false;
 
@@ -1013,9 +987,7 @@ static bool ValueEquals(
 			if (!ValueEquals(&left->array.items[i], &right->array.items[i], maxDepth - 1, error))
 				return false;
 		}
-	}
-
-	if (left->kind == EZJSON_OBJECT) {
+	} else if (left->kind == EZJSON_OBJECT) {
 		if (left->object.length != right->object.length)
 			return false;
 
@@ -1096,6 +1068,115 @@ Ezjson_Value* Ezjson_Lookup(
 	return LookupValue(&json->object, key, keySize, error);
 }
 
+static Ezjson_Value* ValueAt(
+	const Ezjson_Value* value,
+	const char* jsonPointer,
+	size_t jsonPointerSize,
+	Ezjson_Error* error
+) {
+	assert(value != NULL);
+	assert(jsonPointer != NULL || jsonPointerSize == 0);
+	assert(error != NULL);
+
+	if (jsonPointerSize == 0)
+		return (Ezjson_Value*)value;
+
+	while (jsonPointerSize != 0) {
+		jsonPointer += 1;
+		jsonPointerSize -= 1;
+
+		if (jsonPointer[-1] != '/') {
+			*error = EZJSON_SYNTAX_ERROR;
+			return NULL;
+		}
+
+		size_t tokenSize = 0;
+
+		while (tokenSize < jsonPointerSize && jsonPointer[tokenSize] != '/') {
+			if (jsonPointer[tokenSize++] != '~')
+				continue;
+
+			if (tokenSize >= jsonPointerSize || strchr("01", jsonPointer[tokenSize]) == NULL) {
+				*error = EZJSON_SYNTAX_ERROR;
+				return NULL;
+			}
+		}
+
+		if (value->kind == EZJSON_ARRAY) {
+			if (tokenSize == 0) {
+				*error = EZJSON_KEY_ERROR;
+				return NULL;
+			}
+
+			if (tokenSize == 1 && *jsonPointer == '-') {
+				value = &value->array.items[value->array.length];
+				goto Success;
+			}
+
+			if (tokenSize >= 2 && *jsonPointer == '0') {
+				*error = EZJSON_KEY_ERROR;
+				return NULL;
+			}
+
+			size_t index = 0;
+
+			for (size_t ti = 0; ti < tokenSize; ++ti) {
+				static const char k[] = "0123456789";
+				static const size_t v[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+				const char* p = strchr(k, jsonPointer[ti]);
+
+				if (p == NULL || index > SIZE_MAX / 10 || 10 * index > SIZE_MAX - v[k - p]) {
+					*error = EZJSON_KEY_ERROR;
+					return NULL;
+				}
+
+				index = 10 * index + v[k - p];
+			}
+
+			if (index < value->array.length) {
+				value = &value->array.items[index];
+				goto Success;
+			}
+		} else if (value->kind == EZJSON_OBJECT) {
+			for (size_t i = value->object.length; i > 0; --i) {
+				size_t ti = 0;
+				size_t ki = 0;
+
+				while (ti < tokenSize && ki < value->object.items[i - 1].key.size) {
+					char c = jsonPointer[ti];
+
+					if (c == '~' && jsonPointer[ti + 1] == '0') {
+						ti += 2;
+					} else if (c == '~' && jsonPointer[ti + 1] == '1') {
+						c = '/';
+						ti += 2;
+					} else {
+						ti += 1;
+					}
+
+					if (c != value->object.items[i - 1].key.data[ki]) break;
+					ki += 1;
+				}
+
+				if (ti == tokenSize && ki == value->object.items[i - 1].key.size) {
+					value = &value->object.items[i - 1].value;
+					goto Success;
+				}
+			}
+		}
+
+		*error = EZJSON_KEY_ERROR;
+		return NULL;
+
+	Success:
+		if (tokenSize >= jsonPointerSize) break;
+		jsonPointer += tokenSize;
+		jsonPointerSize -= tokenSize;
+	}
+
+	return (Ezjson_Value*)value;
+}
+
 Ezjson_Value* Ezjson_At(
 	const Ezjson_Value* json,
 	const char* jsonPointer,
@@ -1113,111 +1194,7 @@ Ezjson_Value* Ezjson_At(
 		return NULL;
 	}
 
-	if (jsonPointerSize == 0)
-		return (Ezjson_Value*)json;
-
-	for (size_t i = 0; i < jsonPointerSize; ++i) {
-		if (jsonPointer[i] != '~') continue;
-		if (i < jsonPointerSize - 1 && strchr("01", jsonPointer[i + 1]) != NULL) continue;
-		*error = EZJSON_SYNTAX_ERROR;
-		return NULL;
-	}
-
-	while (jsonPointerSize != 0) {
-		if (*jsonPointer != '/') {
-			*error = EZJSON_SYNTAX_ERROR;
-			return NULL;
-		}
-
-		jsonPointer += 1;
-		jsonPointerSize -= 1;
-
-		size_t tokenSize = 0;
-		while (tokenSize < jsonPointerSize && jsonPointer[tokenSize] != '/') tokenSize += 1;
-
-		if (json->kind == EZJSON_ARRAY) {
-			if (tokenSize == 0) {
-				*error = EZJSON_KEY_ERROR;
-				return NULL;
-			}
-
-			if (tokenSize == 1 && *jsonPointer == '-') {
-				json = &json->array.items[json->array.length];
-				goto Success;
-			}
-
-			if (tokenSize >= 2 && *jsonPointer == '0') {
-				*error = EZJSON_KEY_ERROR;
-				return NULL;
-			}
-
-			size_t index = 0;
-
-			for (size_t ti = 0; ti < tokenSize; ++ti) {
-				static const char key[] = "0123456789";
-				static const size_t value[] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-				const char* p = strchr(key, jsonPointer[ti]);
-
-				if (p == NULL || index > SIZE_MAX / 10 || 10 * index > SIZE_MAX - value[key - p]) {
-					*error = EZJSON_KEY_ERROR;
-					return NULL;
-				}
-
-				index = 10 * index + value[key - p];
-			}
-
-			if (index >= json->array.length) {
-				*error = EZJSON_KEY_ERROR;
-				return NULL;
-			}
-
-			json = &json->array.items[index];
-			goto Success;
-		}
-
-		if (json->kind == EZJSON_OBJECT) {
-			for (size_t i = json->object.length; i > 0; --i) {
-				const Ezjson_KeyValue* item = &json->object.items[i - 1];
-
-				size_t ti = 0;
-				size_t ki = 0;
-
-				while (ti < tokenSize && ki < item->key.size) {
-					char c = jsonPointer[ti];
-
-					if (c == '~' && jsonPointer[ti + 1] == '0') {
-						ti += 2;
-					} else if (c == '~' && jsonPointer[ti + 1] == '1') {
-						c = '/';
-						ti += 2;
-					} else {
-						ti += 1;
-					}
-
-					if (c != item->key.data[ki]) break;
-					ki += 1;
-				}
-
-				if (ti == tokenSize && ki == item->key.size) {
-					json = &item->value;
-					goto Success;
-				}
-			}
-
-			*error = EZJSON_KEY_ERROR;
-			return NULL;
-		}
-
-		*error = EZJSON_KEY_ERROR;
-		return NULL;
-
-	Success:
-		if (tokenSize >= jsonPointerSize) break;
-		jsonPointer += tokenSize;
-		jsonPointerSize -= tokenSize;
-	}
-
-	return (Ezjson_Value*)json;
+	return ValueAt(json, jsonPointer, jsonPointerSize, error);
 }
 
 bool Ezjson_Destroy(

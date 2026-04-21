@@ -118,6 +118,8 @@ EZJSON_API bool Ezjson_Destroy(
 	Ezjson_Error* error
 );
 
+#define EZJSON_SAS(string) string, (sizeof(string) - sizeof(*(string))) / sizeof(*(string))
+
 #ifdef __cplusplus
 }
 #endif

@@ -16,48 +16,48 @@ static const Ezjson_Value expected = {
 	.object.length = 10,
 	.object.items = (Ezjson_KeyValue[]){
 		{
-			.key = {"foo", 3},
+			.key = {EZJSON_SAS("foo")},
 			.value.kind = EZJSON_ARRAY,
 			.value.array.length = 2,
 			.value.array.items = (Ezjson_Value[]){
-				{EZJSON_STRING, .string = {"bar", 3}},
-				{EZJSON_STRING, .string = {"baz", 3}},
+				{EZJSON_STRING, .string = {EZJSON_SAS("bar")}},
+				{EZJSON_STRING, .string = {EZJSON_SAS("baz")}},
 			},
 		},
 		{
-			.key = {"", 0},
+			.key = {EZJSON_SAS("")},
 			.value = {EZJSON_NUMBER, .number = 0.0},
 		},
 		{
-			.key = {"a/b", 3},
+			.key = {EZJSON_SAS("a/b")},
 			.value = {EZJSON_NUMBER, .number = 1.0},
 		},
 		{
-			.key = {"c%d", 3},
+			.key = {EZJSON_SAS("c%d")},
 			.value = {EZJSON_NUMBER, .number = 2.0},
 		},
 		{
-			.key = {"e^f", 3},
+			.key = {EZJSON_SAS("e^f")},
 			.value = {EZJSON_NUMBER, .number = 3.0},
 		},
 		{
-			.key = {"g|h", 3},
+			.key = {EZJSON_SAS("g|h")},
 			.value = {EZJSON_NUMBER, .number = 4.0},
 		},
 		{
-			.key = {"i\\j", 3},
+			.key = {EZJSON_SAS("i\\j")},
 			.value = {EZJSON_NUMBER, .number = 5.0},
 		},
 		{
-			.key = {"k\"l", 3},
+			.key = {EZJSON_SAS("k\"l")},
 			.value = {EZJSON_NUMBER, .number = 6.0},
 		},
 		{
-			.key = {" ", 1},
+			.key = {EZJSON_SAS(" ")},
 			.value = {EZJSON_NUMBER, .number = 7.0},
 		},
 		{
-			.key = {"m~n", 3},
+			.key = {EZJSON_SAS("m~n")},
 			.value = {EZJSON_NUMBER, .number = 8.0},
 		},
 	},
@@ -77,18 +77,18 @@ int main(void) {
 	assert(Ezjson_ReadFile(stream, &actual, SIZE_MAX, NULL));
 	assert(Ezjson_Equals(&actual, &expected, SIZE_MAX, NULL));
 
-	assert(Ezjson_At(&actual, "", 0, NULL) == &actual);
-	assert(Ezjson_At(&actual, "/foo", 4, NULL) == &actual.object.items[0].value);
-	assert(Ezjson_At(&actual, "/foo/0", 6, NULL) == &actual.object.items[0].value.array.items[0]);
-	assert(Ezjson_At(&actual, "/", 1, NULL) == &actual.object.items[1].value);
-	assert(Ezjson_At(&actual, "/a~1b", 5, NULL) == &actual.object.items[2].value);
-	assert(Ezjson_At(&actual, "/c%d", 4, NULL) == &actual.object.items[3].value);
-	assert(Ezjson_At(&actual, "/e^f", 4, NULL) == &actual.object.items[4].value);
-	assert(Ezjson_At(&actual, "/g|h", 4, NULL) == &actual.object.items[5].value);
-	assert(Ezjson_At(&actual, "/i\\j", 4, NULL) == &actual.object.items[6].value);
-	assert(Ezjson_At(&actual, "/k\"l", 4, NULL) == &actual.object.items[7].value);
-	assert(Ezjson_At(&actual, "/ ", 2, NULL) == &actual.object.items[8].value);
-	assert(Ezjson_At(&actual, "/m~0n", 5, NULL) == &actual.object.items[9].value);
+	assert(Ezjson_At(&actual, EZJSON_SAS(""), NULL) == &actual);
+	assert(Ezjson_At(&actual, EZJSON_SAS("/foo"), NULL) == &actual.object.items[0].value);
+	assert(Ezjson_At(&actual, EZJSON_SAS("/foo/0"), NULL) == &actual.object.items[0].value.array.items[0]);
+	assert(Ezjson_At(&actual, EZJSON_SAS("/"), NULL) == &actual.object.items[1].value);
+	assert(Ezjson_At(&actual, EZJSON_SAS("/a~1b"), NULL) == &actual.object.items[2].value);
+	assert(Ezjson_At(&actual, EZJSON_SAS("/c%d"), NULL) == &actual.object.items[3].value);
+	assert(Ezjson_At(&actual, EZJSON_SAS("/e^f"), NULL) == &actual.object.items[4].value);
+	assert(Ezjson_At(&actual, EZJSON_SAS("/g|h"), NULL) == &actual.object.items[5].value);
+	assert(Ezjson_At(&actual, EZJSON_SAS("/i\\j"), NULL) == &actual.object.items[6].value);
+	assert(Ezjson_At(&actual, EZJSON_SAS("/k\"l"), NULL) == &actual.object.items[7].value);
+	assert(Ezjson_At(&actual, EZJSON_SAS("/ "), NULL) == &actual.object.items[8].value);
+	assert(Ezjson_At(&actual, EZJSON_SAS("/m~0n"), NULL) == &actual.object.items[9].value);
 
 	return EXIT_SUCCESS;
 }

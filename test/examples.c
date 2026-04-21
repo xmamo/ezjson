@@ -16,47 +16,47 @@ static const Ezjson_Value expected1 = {
 	.object.length = 1,
 	.object.items = (Ezjson_KeyValue[]){
 		{
-			.key = {"Image", 5},
+			.key = {EZJSON_SAS("Image")},
 			.value.kind = EZJSON_OBJECT,
 			.value.object.length = 6,
 			.value.object.items = (Ezjson_KeyValue[]){
 				{
-					.key = {"Width", 5},
+					.key = {EZJSON_SAS("Width")},
 					.value = {EZJSON_NUMBER, .number = 800.0},
 				},
 				{
-					.key = {"Height", 6},
+					.key = {EZJSON_SAS("Height")},
 					.value = {EZJSON_NUMBER, .number = 600.0},
 				},
 				{
-					.key = {"Title", 5},
-					.value = {EZJSON_STRING, .string = {"View from 15th Floor", 20}},
+					.key = {EZJSON_SAS("Title")},
+					.value = {EZJSON_STRING, .string = {EZJSON_SAS("View from 15th Floor")}},
 				},
 				{
-					.key = {"Thumbnail", 9},
+					.key = {EZJSON_SAS("Thumbnail")},
 					.value.kind = EZJSON_OBJECT,
 					.value.object.length = 3,
 					.value.object.items = (Ezjson_KeyValue[]){
 						{
-							.key = {"Url", 3},
-							.value = {EZJSON_STRING, .string = {"http://www.example.com/image/481989943", 38}},
+							.key = {EZJSON_SAS("Url")},
+							.value = {EZJSON_STRING, .string = {EZJSON_SAS("http://www.example.com/image/481989943")}},
 						},
 						{
-							.key = {"Height", 6},
+							.key = {EZJSON_SAS("Height")},
 							.value = {EZJSON_NUMBER, .number = 125.0}
 						},
 						{
-							.key = {"Width", 5},
+							.key = {EZJSON_SAS("Width")},
 							.value = {EZJSON_NUMBER, .number = 100.0},
 						},
 					},
 				},
 				{
-					.key = {"Animated", 8},
+					.key = {EZJSON_SAS("Animated")},
 					.value = {EZJSON_BOOLEAN, .boolean = false},
 				},
 				{
-					.key = {"IDs", 3},
+					.key = {EZJSON_SAS("IDs")},
 					.value.kind = EZJSON_ARRAY,
 					.value.array.length = 4,
 					.value.array.items = (Ezjson_Value[]){
@@ -80,36 +80,36 @@ static const Ezjson_Value expected2 = {
 			.object.length = 8,
 			.object.items = (Ezjson_KeyValue[]){
 				{
-					.key = {"precision", 9},
-					.value = {EZJSON_STRING, .string = {"zip", 3}},
+					.key = {EZJSON_SAS("precision")},
+					.value = {EZJSON_STRING, .string = {EZJSON_SAS("zip")}},
 				},
 				{
-					.key = {"Latitude", 8},
+					.key = {EZJSON_SAS("Latitude")},
 					.value = {EZJSON_NUMBER, .number = 37.7668},
 				},
 				{
-					.key = {"Longitude", 9},
+					.key = {EZJSON_SAS("Longitude")},
 					.value = {EZJSON_NUMBER, .number = -122.3959},
 				},
 				{
-					.key = {"Address", 7},
-					.value = {EZJSON_STRING, .string = {"", 0}},
+					.key = {EZJSON_SAS("Address")},
+					.value = {EZJSON_STRING, .string = {EZJSON_SAS("")}},
 				},
 				{
-					.key = {"City", 4},
-					.value = {EZJSON_STRING, .string = {"SAN FRANCISCO", 13}},
+					.key = {EZJSON_SAS("City")},
+					.value = {EZJSON_STRING, .string = {EZJSON_SAS("SAN FRANCISCO")}},
 				},
 				{
-					.key = {"State", 5},
-					.value = {EZJSON_STRING, .string = {"CA", 2}},
+					.key = {EZJSON_SAS("State")},
+					.value = {EZJSON_STRING, .string = {EZJSON_SAS("CA")}},
 				},
 				{
-					.key = {"Zip", 3},
-					.value = {EZJSON_STRING, .string = {"94107", 5}},
+					.key = {EZJSON_SAS("Zip")},
+					.value = {EZJSON_STRING, .string = {EZJSON_SAS("94107")}},
 				},
 				{
-					.key = {"Country", 7},
-					.value = {EZJSON_STRING, .string = {"US", 2}},
+					.key = {EZJSON_SAS("Country")},
+					.value = {EZJSON_STRING, .string = {EZJSON_SAS("US")}},
 				},
 			},
 		},
@@ -118,36 +118,36 @@ static const Ezjson_Value expected2 = {
 			.object.length = 8,
 			.object.items = (Ezjson_KeyValue[]){
 				{
-					.key = {"precision", 9},
-					.value = {EZJSON_STRING, .string = {"zip", 3}},
+					.key = {EZJSON_SAS("precision")},
+					.value = {EZJSON_STRING, .string = {EZJSON_SAS("zip")}},
 				},
 				{
-					.key = {"Latitude", 8},
+					.key = {EZJSON_SAS("Latitude")},
 					.value = {EZJSON_NUMBER, .number = 37.371991},
 				},
 				{
-					.key = {"Longitude", 9},
+					.key = {EZJSON_SAS("Longitude")},
 					.value = {.kind = EZJSON_NUMBER, .number = -122.026020},
 				},
 				{
-					.key = {"Address", 7},
-					.value = {EZJSON_STRING, .string = {"", 0}},
+					.key = {EZJSON_SAS("Address")},
+					.value = {EZJSON_STRING, .string = {EZJSON_SAS("")}},
 				},
 				{
-					.key = {"City", 4},
-					.value = {EZJSON_STRING, .string = {"SUNNYVALE", 9}},
+					.key = {EZJSON_SAS("City")},
+					.value = {EZJSON_STRING, .string = {EZJSON_SAS("SUNNYVALE")}},
 				},
 				{
-					.key = {"State", 5},
-					.value = {EZJSON_STRING, .string = {"CA", 2}},
+					.key = {EZJSON_SAS("State")},
+					.value = {EZJSON_STRING, .string = {EZJSON_SAS("CA")}},
 				},
 				{
-					.key = {"Zip", 3},
-					.value = {EZJSON_STRING, .string = {"94085", 5}},
+					.key = {EZJSON_SAS("Zip")},
+					.value = {EZJSON_STRING, .string = {EZJSON_SAS("94085")}},
 				},
 				{
-					.key = {"Country", 7},
-					.value = {EZJSON_STRING, .string = {"US", 2}},
+					.key = {EZJSON_SAS("Country")},
+					.value = {EZJSON_STRING, .string = {EZJSON_SAS("US")}},
 				},
 			},
 		},

@@ -1036,10 +1036,8 @@ bool Ezjson_Equals(
 	if (*error != EZJSON_NO_ERROR)
 		return false;
 
-	if (left == NULL || right == NULL) {
-		*error = EZJSON_ARGUMENT_ERROR;
+	if (left == NULL || right == NULL)
 		return left == right;
-	}
 
 	return ValueEquals(left, right, depth, error);
 }
@@ -1078,7 +1076,7 @@ bool Ezjson_Destroy(Ezjson_Value* json, size_t depth, Ezjson_Error* error) {
 
 	if (json == NULL) {
 		*error = EZJSON_ARGUMENT_ERROR;
-		return true;
+		return false;
 	}
 
 	return DestroyValue(json, depth, error);

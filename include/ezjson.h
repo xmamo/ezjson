@@ -100,7 +100,7 @@ typedef struct Ezjson_KeyValue {
 /// @param json Pointer to a cleared JSON value that will receive the parsed result.
 /// @param file File to read. Must not be `NULL`.
 /// @param maxDepth Maximum allowed JSON nesting depth.
-/// @param error Optional pointer to the error value to be updated on failure.
+/// @param error Optional pointer to the error value to be set on failure.
 ///
 /// @return `true` on success, `false` on failure.
 ///
@@ -115,7 +115,7 @@ typedef struct Ezjson_KeyValue {
 /// FILE* file = fopen("example.json", "r");
 /// Ezjson_Error error = EZJSON_NO_ERROR;
 /// Ezjson_Value json = {0};
-/// bool ok = Ezjson_ReadFile(file, &json, 64, &error);
+/// bool ok = Ezjson_ReadFile(&json, file, 64, &error);
 /// ```
 EZJSON_API bool Ezjson_ReadFile(
 	Ezjson_Value* json,
@@ -139,7 +139,7 @@ EZJSON_API bool Ezjson_ReadFile(
 /// @param memory Memory to read. Must not be `NULL`, unless @p size is 0.
 /// @param size Size of the memory to read.
 /// @param maxDepth Maximum allowed JSON nesting depth.
-/// @param error Optional pointer to the error value to be updated on failure.
+/// @param error Optional pointer to the error value to be set on failure.
 ///
 /// @return `true` on success, `false` on failure.
 ///
@@ -154,7 +154,7 @@ EZJSON_API bool Ezjson_ReadFile(
 /// const char* example = "[202, 254, 186, 190]";
 /// Ezjson_Error error = EZJSON_NO_ERROR;
 /// Ezjson_Value json = {0};
-/// bool ok = Ezjson_ReadMemory(example, strlen(example), &json, 64, &error);
+/// bool ok = Ezjson_ReadMemory(&json, example, strlen(example), 64, &error);
 /// ```
 EZJSON_API bool Ezjson_ReadMemory(
 	Ezjson_Value* json,
@@ -175,7 +175,7 @@ EZJSON_API bool Ezjson_ReadMemory(
 /// sort each object's key-value pairs before invoking this function.
 ///
 /// @param maxDepth Maximum allowed JSON nesting depth.
-/// @param error Optional pointer to the error value to be updated on failure.
+/// @param error Optional pointer to the error value to be set on failure.
 ///
 /// @return `true` if the JSON values are equal, `false` if they differ or an error occurred.
 ///
@@ -192,7 +192,7 @@ EZJSON_API bool Ezjson_Equals(
 /// @param json Pointer to a value of kind `EZJSON_OBJECT`.
 /// @param key The key to search for. Must not be `NULL`, unless @p keySize is 0.
 /// @param keySize The size in bytes of the key, excluding the terminating `NUL`.
-/// @param error Optional pointer to the error value to be updated on failure.
+/// @param error Optional pointer to the error value to be set on failure.
 ///
 /// @return A pointer to the value associated to the key, or `NULL` on failure.
 ///
@@ -202,8 +202,8 @@ EZJSON_API bool Ezjson_Equals(
 /// @par Example
 /// ```
 /// FILE* file = fopen("example.json", "r");
-/// Ezjson_Value json = {0};
 /// Ezjson_Error error = EZJSON_NO_ERROR;
+/// Ezjson_Value json = {0};
 /// Ezjson_ReadFile(&json, file, 64, &error);
 /// bool ok = Ezjson_Lookup(&json, EZJSON_SAS("score"), &error);
 /// ```

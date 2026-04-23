@@ -214,6 +214,27 @@ EZJSON_API Ezjson_Value* Ezjson_Lookup(
 	Ezjson_Error* error
 );
 
+/// @brief Addresses the value identified by the given JSON Pointer.
+///
+/// @param json The reference root. Must not be `NULL`.
+/// @param jsonPointer The JSON Pointer string. Must not be `NULL`, unless @p jsonPointerSize is 0.
+/// @param jsonPointerSize The size in bytes of the Pointer string, excluding the terminating `NUL`.
+/// @param error Optional pointer to the error value to be set on failure.
+///
+/// @return A pointer to the identified value, or `NULL` on failure.
+///
+/// @exception EZJSON_ARGUMENT_ERROR An invalid argument was provided.
+/// @exception EZJSON_SYNTAX_ERROR The JSON Pointer syntax is invalid.
+/// @exception EZJSON_KEY_ERROR The JSON Pointer could not be resolved.
+///
+/// @par Example
+/// ```
+/// const char example[] = "{\"foo\": [69, {\"bar\": 420}]}";
+/// Ezjson_Error error = EZJSON_NO_ERROR;
+/// Ezjson_Value json = {0};
+/// Ezjson_ReadMemory(&json, EZJSON_SAS(example), 64, &error);
+/// Ezjson_Value* bar = Ezjson_At(&json, EZJSON_SAS("/foo/1/bar"), &error);
+/// ```
 EZJSON_API Ezjson_Value* Ezjson_At(
 	const Ezjson_Value* json,
 	const char* jsonPointer,

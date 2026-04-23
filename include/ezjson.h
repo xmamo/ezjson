@@ -205,7 +205,7 @@ EZJSON_API bool Ezjson_Equals(
 /// Ezjson_Error error = EZJSON_NO_ERROR;
 /// Ezjson_Value json = {0};
 /// Ezjson_ReadFile(&json, file, 64, &error);
-/// bool ok = Ezjson_Lookup(&json, EZJSON_SAS("score"), &error);
+/// Ezjson_Value* score = Ezjson_Lookup(&json, EZJSON_SAS("score"), &error);
 /// ```
 EZJSON_API Ezjson_Value* Ezjson_Lookup(
 	const Ezjson_Value* json,

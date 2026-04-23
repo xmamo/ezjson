@@ -165,7 +165,7 @@ int main(void) {
 #endif
 
 	Ezjson_Value actual = {0};
-	assert(Ezjson_ReadFile(stream, &actual, SIZE_MAX, NULL));
+	assert(Ezjson_ReadFile(&actual, stream, SIZE_MAX, NULL));
 	assert(Ezjson_Equals(&actual, &expected1, SIZE_MAX, NULL));
 
 #if defined(__STDC_LIB_EXT1__) || defined(__STDC_SECURE_LIB__)
@@ -178,7 +178,7 @@ int main(void) {
 #endif
 
 	actual = (Ezjson_Value){0};
-	assert(Ezjson_ReadFile(stream, &actual, SIZE_MAX, NULL));
+	assert(Ezjson_ReadFile(&actual, stream, SIZE_MAX, NULL));
 	assert(Ezjson_Equals(&actual, &expected2, SIZE_MAX, NULL));
 
 	return EXIT_SUCCESS;

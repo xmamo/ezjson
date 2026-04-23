@@ -811,18 +811,18 @@ static bool ReadStream(
 }
 
 bool Ezjson_ReadFile(
-	FILE* file,
 	Ezjson_Value* json,
+	FILE* file,
 	size_t maxDepth,
 	Ezjson_Error* error
 ) {
 	if (error == NULL)
-		return Ezjson_ReadFile(file, json, maxDepth, &(Ezjson_Error){EZJSON_NO_ERROR});
+		return Ezjson_ReadFile(json, file, maxDepth, &(Ezjson_Error){EZJSON_NO_ERROR});
 
 	if (*error != EZJSON_NO_ERROR)
 		return false;
 
-	if (file == NULL || json == NULL) {
+	if (json == NULL || file == NULL) {
 		*error = EZJSON_ARGUMENT_ERROR;
 		return false;
 	}
@@ -880,19 +880,19 @@ Cleanup0:
 }
 
 bool Ezjson_ReadMemory(
+	Ezjson_Value* json,
 	const void* memory,
 	size_t size,
-	Ezjson_Value* json,
 	size_t maxDepth,
 	Ezjson_Error* error
 ) {
 	if (error == NULL)
-		return Ezjson_ReadMemory(memory, size, json, maxDepth, &(Ezjson_Error){EZJSON_NO_ERROR});
+		return Ezjson_ReadMemory(json, memory, size, maxDepth, &(Ezjson_Error){EZJSON_NO_ERROR});
 
 	if (*error != EZJSON_NO_ERROR)
 		return false;
 
-	if ((memory == NULL && size != 0) || json == NULL) {
+	if (json == NULL || (memory == NULL && size != 0)) {
 		*error = EZJSON_ARGUMENT_ERROR;
 		return false;
 	}

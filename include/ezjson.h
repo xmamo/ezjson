@@ -97,8 +97,8 @@ typedef struct Ezjson_KeyValue {
 /// number, or string) accounts for a depth of 1; a branch (array or object) accounts for a depth of
 /// 1 plus the maximum nesting depth among its children.
 ///
-/// @param file File to read. Must not be `NULL`.
 /// @param json Pointer to the JSON value that will receive the parsed result. Must not be `NULL`.
+/// @param file File to read. Must not be `NULL`.
 /// @param maxDepth Maximum allowed JSON nesting depth.
 /// @param error Optional pointer to the error value to be updated on failure.
 ///
@@ -118,8 +118,8 @@ typedef struct Ezjson_KeyValue {
 /// bool ok = Ezjson_ReadFile(file, &json, 64, &error);
 /// ```
 EZJSON_API bool Ezjson_ReadFile(
-	FILE* file,
 	Ezjson_Value* json,
+	FILE* file,
 	size_t maxDepth,
 	Ezjson_Error* error
 );
@@ -135,9 +135,9 @@ EZJSON_API bool Ezjson_ReadFile(
 /// number, or string) accounts for a depth of 1; a branch (array or object) accounts for a depth of
 /// 1 plus the maximum nesting depth among its children.
 ///
+/// @param json Pointer to the JSON value that will receive the parsed result. Must not be `NULL`.
 /// @param memory Memory to read. Must not be `NULL`, unless @p size is 0.
 /// @param size Size of the memory to read.
-/// @param json Pointer to the JSON value that will receive the parsed result. Must not be `NULL`.
 /// @param maxDepth Maximum allowed JSON nesting depth.
 /// @param error Optional pointer to the error value to be updated on failure.
 ///
@@ -157,9 +157,9 @@ EZJSON_API bool Ezjson_ReadFile(
 /// bool ok = Ezjson_ReadMemory(example, strlen(example), &json, 64, &error);
 /// ```
 EZJSON_API bool Ezjson_ReadMemory(
+	Ezjson_Value* json,
 	const void* memory,
 	size_t size,
-	Ezjson_Value* json,
 	size_t maxDepth,
 	Ezjson_Error* error
 );

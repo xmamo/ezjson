@@ -74,7 +74,7 @@ int main(void) {
 #endif
 
 	Ezjson_Value actual = {0};
-	assert(Ezjson_ReadFile(stream, &actual, SIZE_MAX, NULL));
+	assert(Ezjson_ReadFile(&actual, stream, SIZE_MAX, NULL));
 	assert(Ezjson_Equals(&actual, &expected, SIZE_MAX, NULL));
 
 	assert(Ezjson_At(&actual, EZJSON_SAS(""), NULL) == &actual);

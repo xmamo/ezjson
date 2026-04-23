@@ -187,6 +187,26 @@ EZJSON_API bool Ezjson_Equals(
 	Ezjson_Error* error
 );
 
+/// @brief Looks up the value associated with a key in a given JSON object.
+///
+/// @param json Pointer to a value of kind `EZJSON_OBJECT`.
+/// @param key The key to search for. Must not be `NULL`, unless @p keySize is 0.
+/// @param keySize The size in bytes of the key, excluding the terminating `NUL`.
+/// @param error Optional pointer to the error value to be updated on failure.
+///
+/// @return A pointer to the value associated to the key, or `NULL` on failure.
+///
+/// @exception EZJSON_ARGUMENT_ERROR An invalid argument was provided.
+/// @exception EZJSON_KEY_ERROR The object did not contain the key.
+///
+/// @par Example
+/// ```
+/// FILE* file = fopen("example.json", "r");
+/// Ezjson_Value json = {0};
+/// Ezjson_Error error = EZJSON_NO_ERROR;
+/// Ezjson_ReadFile(&json, file, 64, &error);
+/// bool ok = Ezjson_Lookup(&json, EZJSON_SAS("score"), &error);
+/// ```
 EZJSON_API Ezjson_Value* Ezjson_Lookup(
 	const Ezjson_Value* json,
 	const char* key,

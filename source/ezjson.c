@@ -810,6 +810,24 @@ static bool ReadStream(
 	return ok;
 }
 
+static bool IsClear(Ezjson_Value* value) {
+	assert(value != NULL);
+	
+	if (value->kind == EZJSON_NULL) {
+		return true;
+	} else if (value->kind == EZJSON_BOOLEAN) {
+		return true;
+	} else if (value->kind == EZJSON_NUMBER) {
+		return true;
+	} else if (value->kind == EZJSON_ARRAY) {
+		return value->array.items == NULL && value->array.length == 0;
+	} else if (value->kind == EZJSON_OBJECT) {
+		return value->object.items == NULL && value->object.length == 0;
+	} else {
+		return false;
+	}
+}
+
 bool Ezjson_ReadFile(
 	Ezjson_Value* json,
 	FILE* file,
@@ -822,7 +840,7 @@ bool Ezjson_ReadFile(
 	if (*error != EZJSON_NO_ERROR)
 		return false;
 
-	if (json == NULL || file == NULL) {
+	if (json == NULL || !IsClear(json) || file == NULL) {
 		*error = EZJSON_ARGUMENT_ERROR;
 		return false;
 	}
@@ -892,7 +910,7 @@ bool Ezjson_ReadMemory(
 	if (*error != EZJSON_NO_ERROR)
 		return false;
 
-	if (json == NULL || (memory == NULL && size != 0)) {
+	if (json == NULL || !IsClear(json) || (memory == NULL && size != 0)) {
 		*error = EZJSON_ARGUMENT_ERROR;
 		return false;
 	}

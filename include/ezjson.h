@@ -97,7 +97,7 @@ typedef struct Ezjson_KeyValue {
 /// number, or string) accounts for a depth of 1; a branch (array or object) accounts for a depth of
 /// 1 plus the maximum nesting depth among its children.
 ///
-/// @param json Pointer to the JSON value that will receive the parsed result. Must not be `NULL`.
+/// @param json Pointer to a cleared JSON value that will receive the parsed result.
 /// @param file File to read. Must not be `NULL`.
 /// @param maxDepth Maximum allowed JSON nesting depth.
 /// @param error Optional pointer to the error value to be updated on failure.
@@ -135,7 +135,7 @@ EZJSON_API bool Ezjson_ReadFile(
 /// number, or string) accounts for a depth of 1; a branch (array or object) accounts for a depth of
 /// 1 plus the maximum nesting depth among its children.
 ///
-/// @param json Pointer to the JSON value that will receive the parsed result. Must not be `NULL`.
+/// @param json Pointer to a cleared JSON value that will receive the parsed result.
 /// @param memory Memory to read. Must not be `NULL`, unless @p size is 0.
 /// @param size Size of the memory to read.
 /// @param maxDepth Maximum allowed JSON nesting depth.

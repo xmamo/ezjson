@@ -242,6 +242,21 @@ EZJSON_API Ezjson_Value* Ezjson_At(
 	Ezjson_Error* error
 );
 
+/// @brief Destroys a JSON value, clearing its contents.
+///
+/// @details Destruction is performed recursively. The procedure stops if JSON nesting exceeds @p
+/// maxDepth. A leaf (`null`, `false`, `true`, number, or string) accounts for a depth of 1; a
+/// branch (array or object) accounts for a depth of 1 plus the maximum nesting depth among its
+/// children.
+///
+/// @param json The value to destroy. Must not be `NULL`.
+/// @param maxDepth Maximum allowed JSON nesting depth.
+/// @param error Optional pointer to the error value to be set on failure.
+///
+/// @return `true` if the value was fully destroyed, `false` otherwise.
+///
+/// @exception EZJSON_ARGUMENT_ERROR An invalid argument was provided.
+/// @exception EZJSON_DEPTH_ERROR JSON nesting exceeds @p maxDepth.
 EZJSON_API bool Ezjson_Destroy(
 	Ezjson_Value* json,
 	size_t maxDepth,

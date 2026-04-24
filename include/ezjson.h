@@ -89,9 +89,16 @@ typedef struct Ezjson_KeyValue {
 /// @brief Read a JSON value from a file stream.
 ///
 /// @details
-/// Reads from the current position of @p file up to the end of the first JSON value. Leading and
-/// trailing whitespace is permitted. The caller remains responsible for the stream; on success, the
-/// caller is responsible for destroying @p json when it is no longer needed.
+/// This function reads from the current position of @p file up to the end of the first JSON value.
+/// Leading and trailing whitespace is permitted. The caller remains responsible for the stream; on
+/// success, the caller is responsible for destroying @p json when it is no longer needed.
+///
+/// JSON objects are parsed as-is: the original key order is preserved, and the presence of
+/// duplicate keys is not reported.
+///
+/// No specific encoding is assumed while parsing: the only requirement is that JSON strings are
+/// encoded as ASCII or a superset of ASCII. Escapes of the form `\uXXXX` are encoded into UTF-8
+/// byte sequences; lone surrogate pairs are not rejected and are encoded as WTF-8.
 ///
 /// The parser enforces a maximum nesting depth of @p maxDepth. A leaf (`null`, `false`, `true`,
 /// number, or string) accounts for a depth of 1; a branch (array or object) accounts for a depth of
@@ -127,9 +134,16 @@ EZJSON_API bool Ezjson_ReadFile(
 /// @brief Reads a JSON value from memory.
 ///
 /// @details
-/// Reads from @p memory up to the end of the first JSON value. Leading and trailing whitespace is
-/// permitted. On success, the caller is responsible for destroying @p json when it is no longer
-/// needed.
+/// This function reads from @p memory up to the end of the first JSON value. Leading and trailing
+/// whitespace is permitted. On success, the caller is responsible for destroying @p json when it is
+/// no longer needed.
+///
+/// JSON objects are parsed as-is: the original key order is preserved, and the presence of
+/// duplicate keys is not reported.
+///
+/// No specific encoding is assumed while parsing: the only requirement is that JSON strings are
+/// encoded as ASCII or a superset of ASCII. Escapes of the form `\uXXXX` are encoded into UTF-8
+/// byte sequences; lone surrogate pairs are not rejected and are encoded as WTF-8.
 ///
 /// The parser enforces a maximum nesting depth of @p maxDepth. A leaf (`null`, `false`, `true`,
 /// number, or string) accounts for a depth of 1; a branch (array or object) accounts for a depth of

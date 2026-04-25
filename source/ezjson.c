@@ -967,7 +967,7 @@ Cleanup0:
 #endif
 }
 
-static bool ValueEquals(
+static int CompareValues(
 	const Ezjson_Value* left,
 	const Ezjson_Value* right,
 	size_t maxDepth,
@@ -979,52 +979,100 @@ static bool ValueEquals(
 
 	if (maxDepth == 0) {
 		*error = EZJSON_DEPTH_ERROR;
-		return false;
+		return 0;
 	}
 
-	if (left->kind != right->kind)
-		return false;
-
-	if (left->kind == EZJSON_BOOLEAN) {
-		if (left->boolean != right->boolean)
-			return false;
+	if (left->kind < right->kind)
+		return -1;
+	
+	if (left->kind > right->kind)
+		return +1;
+	
+	if (left->kind == EZJSON_NULL) {
+		return 0;
+	} else if (left->kind == EZJSON_BOOLEAN) {
+		return (left->boolean ? 1 : 0) - (right->boolean ? 1 : 0);
 	} else if (left->kind == EZJSON_NUMBER) {
-		if (left->number != right->number)
-			return false;
-	} else if (left->kind == EZJSON_STRING) {
-		if (left->string.size != right->string.size)
-			return false;
-
-		if (memcmp(left->string.data, right->string.data, left->string.size) != 0)
-			return false;
-	} else if (left->kind == EZJSON_ARRAY) {
-		if (left->array.length != right->array.length)
-			return false;
-
-		for (size_t i = 0; i < left->array.length; ++i) {
-			if (!ValueEquals(&left->array.items[i], &right->array.items[i], maxDepth - 1, error))
-				return false;
+		if (left->number < right->number) {
+			return -1;
+		} else if (left->number > right->number) {
+			return +1;
+		} else {
+			return 0;
 		}
+	} else if (left->kind == EZJSON_STRING) {
+		if (left->string.size < right->string.size) {
+			return -1;
+		} else if (left->string.size > right->string.size) {
+			return +1;
+		} else {
+			return memcmp(left->string.data, right->string.data, left->string.size);
+		}
+	} else if (left->kind == EZJSON_ARRAY) {
+		if (left->array.length < right->array.length)
+			return -1;
+		
+			if (left->array.length > right->array.length)
+			return +1;
+		
+		for (size_t i = 0; i < left->array.length; ++i) {
+			const Ezjson_Value* leftItem = &left->array.items[i];
+			const Ezjson_Value* rightItem = &left->array.items[i];
+			int ordering = CompareValues(leftItem, rightItem, maxDepth - 1, error);
+
+			if (ordering != 0)
+				return ordering;
+		}
+
+		return 0;
 	} else if (left->kind == EZJSON_OBJECT) {
-		if (left->object.length != right->object.length)
-			return false;
+		if (left->object.length < right->object.length) {
+			return -1;
+		} else if (left->object.length > right->object.length) {
+			return +1;
+		} else {
+			for (size_t i = 0; i < left->object.length; ++i) {
+				const Ezjson_KeyValue* leftItem = &left->object.items[i];
+				const Ezjson_KeyValue* rightItem = &right->object.items[i];
 
-		for (size_t i = 0; i < left->object.length; ++i) {
-			const Ezjson_KeyValue* leftItem = &left->object.items[i];
-			const Ezjson_KeyValue* rightItem = &right->object.items[i];
+				if (leftItem->key.size < rightItem->key.size)
+					return -1;
+				
+				if (leftItem->key.size > rightItem->key.size)
+					return +1;
+				
+				int ordering = memcmp(leftItem->key.data, leftItem->key.data, leftItem->key.size);
 
-			if (leftItem->key.size != rightItem->key.size)
-				return false;
+				if (ordering != 0)
+					return ordering;
 
-			if (memcmp(leftItem->key.data, rightItem->key.data, leftItem->key.size) != 0)
-				return false;
+				ordering = CompareValues(&leftItem->value, &rightItem->value, maxDepth - 1, error);
 
-			if (!ValueEquals(&leftItem->value, &rightItem->value, maxDepth - 1, error))
-				return false;
+				if (ordering != 0)
+					return ordering;
+			}
+
+			return 0;
 		}
 	}
+}
 
-	return true;
+int Ezjson_Compare(
+	const Ezjson_Value* left,
+	const Ezjson_Value* right,
+	size_t maxDepth,
+	Ezjson_Error* error
+) {
+	if (error == NULL)
+		return Ezjson_Compare(left, right, maxDepth, &(Ezjson_Error){EZJSON_NO_ERROR});
+
+	if (*error != EZJSON_NO_ERROR)
+		return 0;
+
+	if (left == NULL || right == NULL)
+		return (left == NULL ? 0 : 1) - (right == NULL ? 0 : 1);
+	
+	return CompareValues(left, right, maxDepth, error);
 }
 
 bool Ezjson_Equals(
@@ -1042,7 +1090,8 @@ bool Ezjson_Equals(
 	if (left == NULL || right == NULL)
 		return left == right;
 
-	return ValueEquals(left, right, maxDepth, error);
+	int ordering = CompareValues(left, right, maxDepth, error);
+	return *error == EZJSON_NO_ERROR ? ordering == 0 : false;
 }
 
 static Ezjson_Value* LookupValue(

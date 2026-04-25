@@ -178,6 +178,27 @@ EZJSON_API bool Ezjson_ReadMemory(
 	Ezjson_Error* error
 );
 
+/// @brief Compares two JSON values.
+///
+/// @details
+/// Comparison is performed recursively. The procedure stops if JSON nesting exceeds @p maxDepth. A
+/// leaf (`null`, `false`, `true`, number, or string) accounts for a depth of 1; a branch (array or
+/// object) accounts for a depth of 1 plus the maximum nesting depth among its children.
+///
+/// @param maxDepth Maximum allowed JSON nesting depth.
+/// @param error Optional pointer to the error value to be set on failure.
+///
+/// @return A negative value if @p left is less than @p right, a positive value if @p left is
+/// greater than @p right, 0 if the two values are equal or an error occurred.
+///
+/// @exception EZJSON_DEPTH_ERROR JSON nesting exceeds @p maxDepth.
+EZJSON_API int Ezjson_Compare(
+	const Ezjson_Value* left,
+	const Ezjson_Value* right,
+	size_t maxDepth,
+	Ezjson_Error* error
+);
+
 /// @brief Determines whether two JSON values are equal.
 ///
 /// @details

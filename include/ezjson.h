@@ -98,7 +98,7 @@ typedef struct Ezjson_KeyValue {
 ///
 /// No specific encoding is assumed while parsing: the only requirement is that JSON strings are
 /// encoded as ASCII or a superset of ASCII. Escapes of the form `\uXXXX` are encoded into UTF-8
-/// byte sequences; lone surrogate pairs are not rejected and are encoded as WTF-8.
+/// byte sequences; lone surrogates are not rejected and are encoded as WTF-8.
 ///
 /// The parser enforces a maximum nesting depth of @p maxDepth. A leaf (`null`, `false`, `true`,
 /// number, or string) accounts for a depth of 1; a branch (array or object) accounts for a depth of
@@ -143,7 +143,7 @@ EZJSON_API bool Ezjson_ReadFile(
 ///
 /// No specific encoding is assumed while parsing: the only requirement is that JSON strings are
 /// encoded as ASCII or a superset of ASCII. Escapes of the form `\uXXXX` are encoded into UTF-8
-/// byte sequences; lone surrogate pairs are not rejected and are encoded as WTF-8.
+/// byte sequences; lone surrogates are not rejected and are encoded as WTF-8.
 ///
 /// The parser enforces a maximum nesting depth of @p maxDepth. A leaf (`null`, `false`, `true`,
 /// number, or string) accounts for a depth of 1; a branch (array or object) accounts for a depth of
@@ -264,10 +264,9 @@ EZJSON_API Ezjson_Value* Ezjson_Lookup(
 ///
 /// @par Example
 /// ```
-/// const char example[] = "{\"foo\": [69, {\"bar\": 420}]}";
 /// Ezjson_Error error = EZJSON_NO_ERROR;
 /// Ezjson_Value json = {0};
-/// Ezjson_ReadMemory(&json, EZJSON_SAS(example), 64, &error);
+/// Ezjson_ReadMemory(&json, EZJSON_SAS("{\"foo\": [69, {\"bar\": 420}]}"), 64, &error);
 /// Ezjson_Value* bar = Ezjson_At(&json, EZJSON_SAS("/foo/1/bar"), &error);
 /// ```
 EZJSON_API Ezjson_Value* Ezjson_At(
@@ -279,8 +278,8 @@ EZJSON_API Ezjson_Value* Ezjson_At(
 
 /// @brief Destroys a JSON value, clearing its contents.
 ///
-/// @details Destruction is performed recursively. The procedure stops if JSON nesting exceeds @p
-/// maxDepth. A leaf (`null`, `false`, `true`, number, or string) accounts for a depth of 1; a
+/// @details Destruction is performed recursively. The procedure stops if JSON nesting exceeds
+/// @p maxDepth. A leaf (`null`, `false`, `true`, number, or string) accounts for a depth of 1; a
 /// branch (array or object) accounts for a depth of 1 plus the maximum nesting depth among its
 /// children.
 ///
